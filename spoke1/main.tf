@@ -3,12 +3,6 @@ resource "azurerm_resource_group" "rg" {
     location = var.rg.location
 }
 
-resource "random_string" "random" {
-    length = 3
-    special = false
-    upper = false  
-}
-
 
 resource "azurerm_virtual_network" "vnets" {
     for_each = var.vnets
@@ -37,7 +31,7 @@ resource "azurerm_subnet" "subnets" {
 resource "azurerm_network_security_group" "nsg" {
      for_each = var.subnets
 
-     name = "${each.value.name}-${random_string.random.result}-${count.index+1}"
+     name = each.value.name
      resource_group_name = azurerm_resource_group.rg.name
      location = azurerm_resource_group.rg.location
 
@@ -128,7 +122,7 @@ resource "azurerm_virtual_machine" "vm" {
 
 resource "azurerm_storage_account" "stgacc" {
     
-  name = "Mystorageaccount"
+  name = "msystorageaccount"
   resource_group_name = azurerm_resource_group.rg.name
   location = azurerm_resource_group.rg.location
   account_tier = "Standard"
@@ -148,6 +142,27 @@ resource "azurerm_storage_share" "fileshare" {
 }
 
 resource "azurerm_virtual_machine_extension" "file-share-mount" {
-  name = "myfilesharemount"
+  for_each = var.vms
+  name = "myfilesharemount-${each.key}"
   virtual_machine_id = azurerm_virtual_machine.vm[each.key].id
+  publisher = "Microsoft.Azure.Extensions"
+  type = "CustomScript"
+  type_handler_version = "2.1"
+
+  
+ settings = jsonencode({
+    "commandToExecute" = "bash -c 'echo ${base64encode(templatefile("${path.module}/scripts/mount-fileshare.sh", {
+      storage_account_name = azurerm_storage_account.stgacc.name
+      storage_account_key  = azurerm_storage_account.stgacc.primary_access_key
+      file_share_name      = azurerm_storage_share.fileshare.name
+      mount_point          = "/mnt/myshare"
+    }))} | base64 -d | bash'"
+  })
+
+  protected_settings = jsonencode({
+    "storageAccountName" = azurerm_storage_account.stgacc.name
+    "storageAccountKey"  = azurerm_storage_account.stgacc.primary_access_key
+  })
+
+  depends_on = [azurerm_virtual_machine.vm]
 }
