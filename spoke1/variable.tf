@@ -54,3 +54,7 @@ variable "vms" {
 }
 
 
+variable "keyvault_name" {
+  type = string
+  
+}

@@ -1,3 +1,6 @@
+
+data "azurerm_client_config" "current" {}
+
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
     location = var.rg.location
@@ -119,7 +122,7 @@ resource "azurerm_virtual_machine" "vm" {
 
   
 }
-
+/*
 resource "azurerm_storage_account" "stgacc" {
     
   name = "msystorageaccount"
@@ -165,4 +168,42 @@ resource "azurerm_virtual_machine_extension" "file-share-mount" {
   })
 
   depends_on = [azurerm_virtual_machine.vm]
+}
+*/
+
+resource "azurerm_key_vault" "kv" {
+
+  name = var.keyvault_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  sku_name = "standard"
+
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azurerm_client_config.current.object_id
+
+    secret_permissions = [ "Get","Set", ]
+  }
+  
+}
+
+resource "azurerm_key_vault_secret" "vm_admin_username" {
+
+  for_each = var.vms
+
+  name = "${each.value.vm_name}-admin-username"
+  value = each.value.admin_username
+  key_vault_id = azurerm_key_vault.kv.id
+  
+}
+
+resource "azurerm_key_vault_secret" "vm_admin_password" {
+
+  for_each = var.vms
+
+  name = "${each.value.vm_name}-admin-password"
+  value = each.value.admin_password
+  key_vault_id = azurerm_key_vault.kv.id
+  
 }

@@ -50,3 +50,5 @@ vms = {
     }
 }
 
+keyvault_name = "mykeyvault"
+
