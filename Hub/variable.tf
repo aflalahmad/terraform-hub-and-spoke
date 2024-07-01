@@ -13,7 +13,7 @@ variable "vnet_name" {
 }
 
 variable "address_space" {
-  type = list(string)
+  type = string
   
 }
 
@@ -22,15 +22,14 @@ variable "subnet_name" {
 }
 
 variable "address_prefixes" {
-  type = list(string)
+  type = string
   
 }
 variable "vnet_peerings" {
-    type = map(object({
-        allow_forwarded_traffic     = bool
-        allow_gateway_transit       = bool
-        allow_virtual_network_access = bool
-    }))
-    
-    default = {}
+  description = "Map of vnet peering settings"
+  type = map(object({
+    allow_forwarded_traffic      = bool
+    allow_gateway_transit        = bool
+    allow_virtual_network_access = bool
+  }))
 }

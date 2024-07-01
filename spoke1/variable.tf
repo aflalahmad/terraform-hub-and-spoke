@@ -11,7 +11,7 @@ variable "rg" {
 
 variable "vnets" {
   type = map(object({
-    address_space  = string 
+    address_space  = string
   }))
    description = "The virtual network value must not be empty"
 }

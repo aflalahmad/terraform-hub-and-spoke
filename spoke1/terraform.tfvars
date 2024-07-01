@@ -4,7 +4,7 @@ rg = {
 }
 vnets = {
      spoke1VNet= {
-        address_space = "10.0.0.0/16"
+        address_space = "10.30.0.0/16"
     }
 }
 
@@ -12,13 +12,13 @@ subnets = {
      subnet1 = {
         name = "spokesubnet1",
         vnet = "spoke1VNet"
-        address_prefixes = "10.0.1.0/24"
+        address_prefixes = "10.30.1.0/24"
      
      },
      subnet2 = {
         name = "spokesubnet2",
         vnet = "spoke1VNet"
-        address_prefixes = "10.0.2.0/24"
+        address_prefixes = "10.30.2.0/24"
         
      }
 }

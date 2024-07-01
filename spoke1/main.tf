@@ -171,7 +171,7 @@ resource "azurerm_virtual_machine_extension" "file-share-mount" {
 
   depends_on = [azurerm_virtual_machine.vm]
 }
-*/
+
 
 resource "azurerm_key_vault" "kv" {
 
@@ -209,3 +209,4 @@ resource "azurerm_key_vault_secret" "vm_admin_password" {
   key_vault_id = azurerm_key_vault.kv.id
   
 }
+*/

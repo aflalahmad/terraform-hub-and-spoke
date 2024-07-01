@@ -6,7 +6,7 @@ resource "azurerm_resource_group" "rg" {
 resource "azurerm_virtual_network" "hubvnets" {
 
     name  = var.vnet_name
-    address_space = var.address_space
+    address_space = [var.address_space]
     resource_group_name =azurerm_resource_group.rg.name
     location = azurerm_resource_group.rg.location
     
@@ -17,19 +17,19 @@ resource "azurerm_virtual_network" "hubvnets" {
 resource "azurerm_subnet" "subnet" {
 
     name = var.subnet_name
-    address_prefixes = var.address_prefixes
+    address_prefixes = [var.address_prefixes]
     resource_group_name = azurerm_resource_group.rg.name
-    virtual_network_name = azurerm_virtual_network.vnets.name
-    depends_on = [ azurerm_virtual_network.vnets ]
+    virtual_network_name = azurerm_virtual_network.hubvnets.name
+    depends_on = [ azurerm_virtual_network.hubvnets]
   
 }
 
-/*
+
 
 resource "azurerm_subnet" "Gatewaysubnet" {
 
     name = "GatewaySubnet"
-    address_prefixes = ["10.0.0.32/27"]
+    address_prefixes = ["10.0.2.0/27"]
     resource_group_name = azurerm_resource_group.rg.name
     virtual_network_name = azurerm_virtual_network.vnets.name
     depends_on = [ azurerm_virtual_network.vnets ]
@@ -67,7 +67,7 @@ resource "azurerm_virtual_network_gateway" "vnetgateway" {
 
 resource "azurerm_subnet" "firewall_subnet" {
   name                 = "AzureFirewallSubnet"
-  address_prefixes     = ["10.0.0.64/26"]
+  address_prefixes     = ["10.0.3.0/26"]
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnets.name
 
@@ -99,22 +99,27 @@ resource "azurerm_firewall" "firewall" {
   depends_on = [azurerm_subnet.firewall_subnet]
 }
 
-*/
+
+data "azurerm_virtual_network" "spoke1vnet" {
+  name = "spoke1VNet"
+  resource_group_name = "spoke1RG"
+  
+}
 resource "azurerm_virtual_network_peering" "spoke1_to_hub" {
     for_each = var.vnet_peerings
 
-    name                     = "spoke to hub peering"  # Use a meaningful name for the peering
-    virtual_network_name     = data.azurerm_virtual_network.vnets.name
+    name                     = "spoke-to-hub-peering-${each.key}"  
+    virtual_network_name     = data.azurerm_virtual_network.spoke1vnet.name
     remote_virtual_network_id = azurerm_virtual_network.hubvnets.id
 
     allow_forwarded_traffic    = each.value.allow_forwarded_traffic
     allow_gateway_transit      = each.value.allow_gateway_transit
     allow_virtual_network_access = each.value.allow_virtual_network_access
 
-    resource_group_name = data.azurerm_resource_group.rg.name
+    resource_group_name = data.azurerm_virtual_network.spoke1vnet.resource_group_name
 
     depends_on = [
-        data.azurerm_virtual_network.vnets,
+        data.azurerm_virtual_network.spoke1vnet,
         azurerm_virtual_network.hubvnets
     ]
 }
@@ -122,9 +127,9 @@ resource "azurerm_virtual_network_peering" "spoke1_to_hub" {
 resource "azurerm_virtual_network_peering" "hub_to_spoke1" {
     for_each = var.vnet_peerings
 
-    name                     = "hub to spoke1 peering"  # Use a meaningful name for the peering
+    name                     = "hub-to-spoke1-peering-${each.key}" 
     virtual_network_name     = azurerm_virtual_network.hubvnets.name
-    remote_virtual_network_id = data.azurerm.azurerm_virtual_network.vnets.id
+    remote_virtual_network_id = data.azurerm_virtual_network.spoke1vnet.id
 
     allow_forwarded_traffic    = each.value.allow_forwarded_traffic
     allow_gateway_transit      = each.value.allow_gateway_transit
@@ -133,7 +138,7 @@ resource "azurerm_virtual_network_peering" "hub_to_spoke1" {
     resource_group_name = azurerm_resource_group.rg.name
 
     depends_on = [
-        data.azurerm_virtual_network.vnets,
+        data.azurerm_virtual_network.spoke1vnet,
         azurerm_virtual_network.hubvnets
 
     ]
