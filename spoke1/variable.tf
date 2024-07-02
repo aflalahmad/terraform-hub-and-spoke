@@ -58,3 +58,10 @@ variable "keyvault_name" {
   type = string
   
 }
+
+variable "rsv_name" {
+  type = string
+}
+variable "backuppolicy_name" {
+  type = string
+}

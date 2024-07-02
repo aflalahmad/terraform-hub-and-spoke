@@ -25,3 +25,6 @@ admin_username = "scalesetuser"
 admin_password = "P@assword12345"
 sku = "Standard_F2"
 instance = 2
+rsv_name = "spoke2rescoveryservicevault"
+backuppolicy_name = "spoke2backuppolicy"
+

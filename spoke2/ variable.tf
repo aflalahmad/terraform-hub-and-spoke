@@ -56,3 +56,10 @@ variable "instance" {
 
   type   = number
 }
+
+variable "rsv_name" {
+  type = string
+}
+variable "backuppolicy_name" {
+  type = string
+}

@@ -53,7 +53,7 @@ resource "azurerm_subnet_network_security_group_association" "nsg-association" {
       depends_on = [ azurerm_network_security_group.nsg,azurerm_subnet.subnets ]
 }
 
-resource "azurerm_windows_virtual_machine_scale_set" "example" {
+resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
   name                 = var.vmss_name
   resource_group_name  = azurerm_resource_group.rg.name
   location             = azurerm_resource_group.rg.location
@@ -88,4 +88,101 @@ resource "azurerm_windows_virtual_machine_scale_set" "example" {
       }
     }
   }
+}
+#Daily backup for VM
+# Recovery Services Vault
+resource "azurerm_recovery_services_vault" "rsv" {
+  name                = var.rsv_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  sku                 = "Standard"
+}
+
+resource "azurerm_backup_policy_vm" "backup_policy" {
+  name                = var.backuppolicy_name
+  resource_group_name = azurerm_resource_group.rg.name
+  recovery_vault_name = azurerm_recovery_services_vault.rsv.name
+
+  backup {
+    frequency = "Daily"
+    time      = "12:00"
+  }
+
+  retention_daily {
+    count = 30
+  }
+
+  retention_weekly {
+    count   = 5
+    weekdays = ["Monday"]
+  }
+
+  retention_monthly {
+    count   = 12
+    weekdays = ["Monday"]
+    weeks    = ["First"]
+  }
+
+  retention_yearly {
+    count   = 1
+    weekdays = ["Monday"]
+    months   = ["January"]
+    weeks    = ["First"]
+  }
+}
+
+
+# Backup Protection for VM Scale Set
+/*
+resource "azurerm_backup_protected_vm" "backup_protected" {
+  count               = var.instance
+  resource_group_name = azurerm_resource_group.rg.name
+  recovery_vault_name = azurerm_recovery_services_vault.rsv.name
+  source_vm_id        = azurerm_windows_virtual_machine_scale_set.vmss.virtual_machine_id[count.index]
+  backup_policy_id    = azurerm_backup_policy_vm.backup_policy.id
+  depends_on = [ azurerm_windows_virtual_machine_scale_set.vmss,azurerm_backup_policy_vm.backup_policy ]
+}
+*/
+
+#Service deployments should be limited to specific Azure regions via Azure Policy. 
+resource "azurerm_policy_definition" "limit_deployment_regions" {
+  name         = "limiteddeployment-regions"
+  display_name = "Limit Azure Resource Deployments to Specific Regions"
+  description  = "Ensures that resources are deployed only in specific Azure regions."
+  mode = "Indexed"
+  policy_type = "Custom"
+
+  policy_rule = jsonencode({
+    "if": {
+      "not": {
+        "field": "location",
+        "in": [
+          "East US",
+          "West Europe",
+          "Southeast Asia",
+          "West US"
+        ]
+      }
+    },
+    "then": {
+      "effect": "deny"
+    }
+  })
+}
+#All Azure Policies should be scoped to the Resource Group level. 
+resource "azurerm_resource_group_policy_assignment" "example" {
+  name                 = "example"
+  resource_group_id    = azurerm_resource_group.rg.id
+  policy_definition_id = azurerm_policy_definition.limit_deployment_regions.id
+
+  parameters = <<PARAMS
+    {
+      "tagName": {
+        "value": "Business Unit"
+      },
+      "tagValue": {
+        "value": "BU"
+      }
+    }
+PARAMS
 }

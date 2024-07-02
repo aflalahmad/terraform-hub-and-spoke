@@ -89,6 +89,49 @@ resource "azurerm_availability_set" "availability_set" {
   platform_update_domain_count = 5
 }
 
+resource "azurerm_recovery_services_vault" "rsv" {
+
+  name = var.rsv_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  sku = "Standard"
+  
+}
+
+resource "azurerm_backup_policy_vm" "backup_policy" {
+  name                = var.backuppolicy_name
+  resource_group_name = azurerm_resource_group.rg.name
+  recovery_vault_name = azurerm_recovery_services_vault.rsv.name
+
+  backup {
+    frequency = "Daily"
+    time      = "12:00"
+  }
+
+  retention_daily {
+    count = 30
+  }
+
+  retention_weekly {
+    count   = 5
+    weekdays = ["Monday"]
+  }
+
+  retention_monthly {
+    count   = 12
+    weekdays = ["Monday"]
+    weeks    = ["First"]
+  }
+
+  retention_yearly {
+    count   = 1
+    weekdays = ["Monday"]
+    months   = ["January"]
+    weeks    = ["First"]
+  }
+}
+
+
 resource "azurerm_virtual_machine" "vm" {
 
     for_each = var.vms
@@ -131,8 +174,16 @@ resource "azurerm_virtual_machine" "vm" {
     disk_size_gb      = each.value.data_disk_size_gb
     managed_disk_type = "Standard_LRS"
   }
-
+depends_on = [ azurerm_recovery_services_vault.rsv,azurerm_backup_policy_vm.backup_policy ]
   
+}
+
+resource "azurerm_backup_protected_vm" "backup_protected" {
+    for_each = azurerm_virtual_machine.vm
+    resource_group_name = azurerm_resource_group.rg.name
+    recovery_vault_name = azurerm_recovery_services_vault.rsv.name
+    source_vm_id = each.value.id
+    backup_policy_id = azurerm_backup_policy_vm.backup_policy.id
 }
 
 /*
@@ -199,7 +250,7 @@ resource "azurerm_key_vault_secret" "vm_admin_username" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-adminusername"
+  name = "${each.value.vm_name}-admin-username"
   value = each.value.admin_username
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -209,7 +260,7 @@ resource "azurerm_key_vault_secret" "vm_admin_password" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-adminpassword"
+  name = "${each.value.vm_name}-admin-password"
   value = each.value.admin_password
   key_vault_id = azurerm_key_vault.kv.id
   
