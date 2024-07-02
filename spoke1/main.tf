@@ -80,6 +80,15 @@ resource "azurerm_network_interface" "nic" {
   
 }
 
+resource "azurerm_availability_set" "availability_set" {
+  name                = "my-availability-set"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+
+  platform_fault_domain_count = 3
+  platform_update_domain_count = 5
+}
+
 resource "azurerm_virtual_machine" "vm" {
 
     for_each = var.vms
@@ -90,6 +99,7 @@ resource "azurerm_virtual_machine" "vm" {
     network_interface_ids = [azurerm_network_interface.nic[each.key].id]
     vm_size = each.value.vm_size
      
+     availability_set_id = azurerm_availability_set.availability_set.id
      storage_image_reference {
        publisher = "MicrosoftWindowsServer"
        offer = "WindowsServer"
@@ -105,8 +115,8 @@ resource "azurerm_virtual_machine" "vm" {
 
   os_profile {
     computer_name  = each.value.host_name
-    admin_username = each.value.admin_username
-    admin_password = each.value.admin_password
+    admin_username = azurerm_key_vault_secret.vm_admin_username[each.key].value
+    admin_password = azurerm_key_vault_secret.vm_admin_password[each.key].value
   }
 
    os_profile_windows_config {
@@ -124,6 +134,7 @@ resource "azurerm_virtual_machine" "vm" {
 
   
 }
+
 /*
 resource "azurerm_storage_account" "stgacc" {
     
@@ -144,24 +155,18 @@ resource "azurerm_storage_share" "fileshare" {
   storage_account_name = azurerm_storage_account.stgacc.name
   quota = 100
   
-}
 
+}
 resource "azurerm_virtual_machine_extension" "file-share-mount" {
   for_each = var.vms
   name = "myfilesharemount-${each.key}"
   virtual_machine_id = azurerm_virtual_machine.vm[each.key].id
-  publisher = "Microsoft.Azure.Extensions"
-  type = "CustomScript"
-  type_handler_version = "2.1"
+  publisher = "Microsoft.Compute"
+  type = "CustomScriptExtension"
+  type_handler_version = "1.10"
 
-  
- settings = jsonencode({
-    "commandToExecute" = "bash -c 'echo ${base64encode(templatefile("${path.module}/scripts/mount-fileshare.sh", {
-      storage_account_name = azurerm_storage_account.stgacc.name
-      storage_account_key  = azurerm_storage_account.stgacc.primary_access_key
-      file_share_name      = azurerm_storage_share.fileshare.name
-      mount_point          = "/mnt/myshare"
-    }))} | base64 -d | bash'"
+  settings = jsonencode({
+    "commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -File ${path.module}/mount-fileshare.ps1 -storageAccountName ${azurerm_storage_account.stgacc.name} -storageAccountKey ${azurerm_storage_account.stgacc.primary_access_key} -fileShareName ${azurerm_storage_share.fileshare.name} -mountPoint 'Z:'"
   })
 
   protected_settings = jsonencode({
@@ -172,7 +177,7 @@ resource "azurerm_virtual_machine_extension" "file-share-mount" {
   depends_on = [azurerm_virtual_machine.vm]
 }
 
-
+*/
 resource "azurerm_key_vault" "kv" {
 
   name = var.keyvault_name
@@ -194,7 +199,7 @@ resource "azurerm_key_vault_secret" "vm_admin_username" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-admin-username"
+  name = "${each.value.vm_name}-adminusername"
   value = each.value.admin_username
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -204,9 +209,9 @@ resource "azurerm_key_vault_secret" "vm_admin_password" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-admin-password"
+  name = "${each.value.vm_name}-adminpassword"
   value = each.value.admin_password
   key_vault_id = azurerm_key_vault.kv.id
   
 }
-*/
+

@@ -11,19 +11,26 @@ variable "rg" {
 variable "vnet_name" {
   type = string
 }
-
 variable "address_space" {
   type = string
   
 }
 
-variable "subnet_name" {
+variable "publicip_names" {
+
+  type = map(object({
+    name = string
+  }))
+  
+}
+variable "bastionhost_name" {
   type = string
 }
-
-variable "address_prefixes" {
-  type = string
-  
+variable "subnet_details"{
+  type = map(object({
+    subnet_name = string
+    address_prefixes = string
+  }))
 }
 variable "vnet_peerings" {
   description = "Map of vnet peering settings"
