@@ -1,5 +1,6 @@
 # terraform-project1
-![hub and spoke 1](https://github.com/aflalahmad/terraform-project1/assets/105841418/5d8ff7d1-cae0-400c-98a4-beb50f8ca1ff)S
+![hub and spoke 2](https://github.com/aflalahmad/terraform-project1/assets/105841418/f0b27181-84cc-4466-823d-02dd99b7edee)
+
 
 
 # Project Documentation
