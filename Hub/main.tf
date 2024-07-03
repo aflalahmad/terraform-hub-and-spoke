@@ -24,8 +24,19 @@ resource "azurerm_subnet" "subnet" {
     virtual_network_name = azurerm_virtual_network.hubvnets.name
   
     depends_on = [ azurerm_virtual_network.hubvnets]
-  
+   
+  dynamic "delegation" {
+    for_each = each.value.delegations
+    content {
+      name = delegation.value.name
+      service_delegation {
+        name    = delegation.value.service_delegation
+        actions = delegation.value.actions
+      }
+    }
+  }
 }
+  
 
 #publiips for all
 resource "azurerm_public_ip" "publi_ips" {
@@ -112,6 +123,7 @@ data "azurerm_virtual_network" "spoke1vnet" {
   
 
 }
+
 
 #spoke1 peerings
 
@@ -218,7 +230,7 @@ resource "azurerm_app_service_virtual_network_swift_connection" "vnet_integratio
 }
 
 #connect to on premise
-/*
+
  
  data "azurerm_public_ip" "onprem_publicip" {
    name = "onprem_vnetgatway_publicip"
@@ -237,7 +249,7 @@ resource "azurerm_local_network_gateway" "hub_local_network_gateway" {
     location = azurerm_resource_group.rg.location
     resource_group_name = azurerm_resource_group.rg.name
     gateway_address = data.azurerm_public_ip.onprem_publicip.ip_address
-    address_space = [data.azurerm_virtual_network.onprem_vnet.address_space]
+    address_space = [data.azurerm_virtual_network.onprem_vnet.address_space[0]]
     depends_on = [ azurerm_public_ip.publi_ips,azurerm_virtual_network_gateway.vnetgateway,
      data.azurerm_public_ip.onprem_publicip,data.azurerm_virtual_network.onprem_vnet]
 }
@@ -257,7 +269,7 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
 
 
-*/
+
 
 
 

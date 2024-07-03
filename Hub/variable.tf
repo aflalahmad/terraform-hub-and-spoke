@@ -30,6 +30,11 @@ variable "subnet_details"{
   type = map(object({
     subnet_name = string
     address_prefixes = string
+     delegations     = list(object({
+      name              = string
+      service_delegation = string
+      actions           = list(string)
+    }))
   }))
 }
 variable "vnet_peerings" {

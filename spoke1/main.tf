@@ -256,7 +256,7 @@ resource "azurerm_key_vault_secret" "vm_admin_username" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-adminnusername"
+  name = "${each.value.vm_name}-adminnusername1"
   value = each.value.admin_username
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -266,7 +266,7 @@ resource "azurerm_key_vault_secret" "vm_admin_password" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-adminnnpassword"
+  name = "${each.value.vm_name}-adminnnpassword2"
   value = each.value.admin_password
   key_vault_id = azurerm_key_vault.kv.id
   

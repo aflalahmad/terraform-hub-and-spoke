@@ -89,6 +89,7 @@ resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
     }
   }
 }
+/*
 #Daily backup for VM
 # Recovery Services Vault
 resource "azurerm_recovery_services_vault" "rsv" {
@@ -142,7 +143,7 @@ resource "azurerm_backup_protected_vm" "backup_protected" {
   backup_policy_id    = azurerm_backup_policy_vm.backup_policy.id
   depends_on = [ azurerm_windows_virtual_machine_scale_set.vmss,azurerm_backup_policy_vm.backup_policy ]
 }
-*/
+
 
 #Service deployments should be limited to specific Azure regions via Azure Policy. 
 resource "azurerm_policy_definition" "limit_deployment_regions" {
@@ -177,7 +178,7 @@ resource "azurerm_resource_group_policy_assignment" "example" {
 
 }
 
-
+*/
 #route table for communicate between spoke2 t0 spoke1 through firewall
 
 resource "azurerm_route_table" "spoke2-udr" {

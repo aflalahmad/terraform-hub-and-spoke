@@ -20,19 +20,28 @@ subnet_details = {
  AzureFirewallSubnet = {
     subnet_name = "AzureFirewallSubnet"
     address_prefixes = "10.10.3.0/24"
-    
+          delegations     = []
+
   },
  GatewaySubnet = {
     subnet_name = "GatewaySubnet"
     address_prefixes = "10.10.4.0/27"
+          delegations     = []
+
   },
   hub_integration= {
     subnet_name = "hub_integration"
     address_prefixes = "10.10.2.0/24"
+     delegations     = [{
+        name              = "appServiceDelegation"
+        service_delegation = "Microsoft.Web/serverFarms"
+        actions           = ["Microsoft.Network/virtualNetworks/subnets/action", "Microsoft.Network/virtualNetworks/subnets/join/action"]
+      }]
   },
   AzureBastionSubnet = {
     subnet_name = "AzureBastionSubnet"
     address_prefixes = "10.10.5.0/24"
+     delegations     = []
   } 
 }
 

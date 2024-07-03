@@ -20,7 +20,7 @@ subnets = {
      }
 }
 
-vmss_name = "myvmscaleset"
+vmss_name = "myvmscaleset-new"
 admin_username = "scalesetuser"
 admin_password = "P@assword12345"
 sku = "Standard_F2"
