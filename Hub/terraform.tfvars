@@ -20,6 +20,7 @@ subnet_details = {
  AzureFirewallSubnet = {
     subnet_name = "AzureFirewallSubnet"
     address_prefixes = "10.10.3.0/24"
+    
   },
  GatewaySubnet = {
     subnet_name = "GatewaySubnet"
@@ -42,3 +43,5 @@ vnet_peerings = {
     allow_virtual_network_access = true
   }
 }
+
+hub_local_network_gateway_name = "hub-to-onprem"

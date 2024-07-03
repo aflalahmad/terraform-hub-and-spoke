@@ -8,7 +8,7 @@ resource "azurerm_resource_group" "rg" {
     location = var.rg.location
 }
 
-
+#virtual Network
 resource "azurerm_virtual_network" "vnets" {
     for_each = var.vnets
 
@@ -20,6 +20,7 @@ resource "azurerm_virtual_network" "vnets" {
    
     depends_on = [ azurerm_resource_group.rg ]
 }
+#subnets
 
 resource "azurerm_subnet" "subnets" {
 
@@ -32,7 +33,7 @@ resource "azurerm_subnet" "subnets" {
     depends_on = [ azurerm_virtual_network.vnets ]
   
 }
-
+#network security group
 resource "azurerm_network_security_group" "nsg" {
      for_each = var.subnets
 
@@ -56,6 +57,7 @@ resource "azurerm_network_security_group" "nsg" {
      }
 }
 
+#NSG Asoocistion
 
 resource "azurerm_subnet_network_security_group_association" "nsg-association" {
       for_each = var.subnets
@@ -65,7 +67,7 @@ resource "azurerm_subnet_network_security_group_association" "nsg-association" {
       depends_on = [ azurerm_network_security_group.nsg,azurerm_subnet.subnets ]
 }
 
-
+#Network interface card
 resource "azurerm_network_interface" "nic" {
     for_each = var.vms
 
@@ -79,7 +81,7 @@ resource "azurerm_network_interface" "nic" {
     }
   
 }
-
+#Availability set for Virtual machine
 resource "azurerm_availability_set" "availability_set" {
   name                = "my-availability-set"
   resource_group_name = azurerm_resource_group.rg.name
@@ -89,49 +91,7 @@ resource "azurerm_availability_set" "availability_set" {
   platform_update_domain_count = 5
 }
 
-resource "azurerm_recovery_services_vault" "rsv" {
-
-  name = var.rsv_name
-  resource_group_name = azurerm_resource_group.rg.name
-  location = azurerm_resource_group.rg.location
-  sku = "Standard"
-  
-}
-
-resource "azurerm_backup_policy_vm" "backup_policy" {
-  name                = var.backuppolicy_name
-  resource_group_name = azurerm_resource_group.rg.name
-  recovery_vault_name = azurerm_recovery_services_vault.rsv.name
-
-  backup {
-    frequency = "Daily"
-    time      = "12:00"
-  }
-
-  retention_daily {
-    count = 30
-  }
-
-  retention_weekly {
-    count   = 5
-    weekdays = ["Monday"]
-  }
-
-  retention_monthly {
-    count   = 12
-    weekdays = ["Monday"]
-    weeks    = ["First"]
-  }
-
-  retention_yearly {
-    count   = 1
-    weekdays = ["Monday"]
-    months   = ["January"]
-    weeks    = ["First"]
-  }
-}
-
-
+#virtual machines
 resource "azurerm_virtual_machine" "vm" {
 
     for_each = var.vms
@@ -176,6 +136,50 @@ resource "azurerm_virtual_machine" "vm" {
   }
 depends_on = [ azurerm_recovery_services_vault.rsv,azurerm_backup_policy_vm.backup_policy ]
   
+}
+
+#Recovery service vault for backup
+
+resource "azurerm_recovery_services_vault" "rsv" {
+
+  name = var.rsv_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  sku = "Standard"
+  
+}
+
+resource "azurerm_backup_policy_vm" "backup_policy" {
+  name                = var.backuppolicy_name
+  resource_group_name = azurerm_resource_group.rg.name
+  recovery_vault_name = azurerm_recovery_services_vault.rsv.name
+
+  backup {
+    frequency = "Daily"
+    time      = "12:00"
+  }
+
+  retention_daily {
+    count = 30
+  }
+
+  retention_weekly {
+    count   = 5
+    weekdays = ["Monday"]
+  }
+
+  retention_monthly {
+    count   = 12
+    weekdays = ["Monday"]
+    weeks    = ["First"]
+  }
+
+  retention_yearly {
+    count   = 1
+    weekdays = ["Monday"]
+    months   = ["January"]
+    weeks    = ["First"]
+  }
 }
 
 resource "azurerm_backup_protected_vm" "backup_protected" {
@@ -229,6 +233,8 @@ resource "azurerm_virtual_machine_extension" "file-share-mount" {
 }
 
 */
+
+#key vault for storing username and password
 resource "azurerm_key_vault" "kv" {
 
   name = var.keyvault_name
@@ -250,7 +256,7 @@ resource "azurerm_key_vault_secret" "vm_admin_username" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-admin-username"
+  name = "${each.value.vm_name}-adminnusername"
   value = each.value.admin_username
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -260,9 +266,31 @@ resource "azurerm_key_vault_secret" "vm_admin_password" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-admin-password"
+  name = "${each.value.vm_name}-adminnnpassword"
   value = each.value.admin_password
   key_vault_id = azurerm_key_vault.kv.id
   
 }
 
+#route table for communicate between spoke1 n=and spoke2 through firewall
+resource "azurerm_route_table" "spoke1-udr" {
+
+  name = "spoke1-udr-to-firewall"
+  location = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  route {
+    name = "route-to-firewall"
+    address_prefix = "10.0.0.0/25"
+    next_hop_type = "VirtualAppliance"
+    next_hop_in_ip_address = "10.10.3.4"
+  }
+  
+}
+
+resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association" {
+    for_each = var.subnets
+
+    subnet_id = azurerm_subnet.subnets[each.key].id
+    route_table_id = azurerm_route_table.spoke1-udr.id
+}

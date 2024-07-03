@@ -2,14 +2,14 @@ resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
     location = var.rg.location
 }
-
+#virtual network
 resource "azurerm_virtual_network" "vnet" {
   name = var.vnet_name
   resource_group_name = azurerm_resource_group.rg.name
   location = azurerm_resource_group.rg.location
   address_space = ["10.0.0.0/24"]
 }
-
+#subnets
 resource "azurerm_subnet" "subnets" {
 
     for_each = var.subnets
@@ -21,7 +21,7 @@ resource "azurerm_subnet" "subnets" {
     depends_on = [ azurerm_virtual_network.vnet ]
 }
 
-
+#Network security group
 resource "azurerm_network_security_group" "nsg" {
      for_each = var.subnets
 
@@ -44,7 +44,7 @@ resource "azurerm_network_security_group" "nsg" {
     }
      }
 }
-
+#nsg association
 resource "azurerm_subnet_network_security_group_association" "nsg-association" {
       for_each = var.subnets
 
@@ -52,7 +52,7 @@ resource "azurerm_subnet_network_security_group_association" "nsg-association" {
       network_security_group_id = azurerm_network_security_group.nsg[each.key].id
       depends_on = [ azurerm_network_security_group.nsg,azurerm_subnet.subnets ]
 }
-
+#Virtual machine scale set
 resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
   name                 = var.vmss_name
   resource_group_name  = azurerm_resource_group.rg.name
@@ -175,14 +175,29 @@ resource "azurerm_resource_group_policy_assignment" "example" {
   resource_group_id    = azurerm_resource_group.rg.id
   policy_definition_id = azurerm_policy_definition.limit_deployment_regions.id
 
-  parameters = <<PARAMS
-    {
-      "tagName": {
-        "value": "Business Unit"
-      },
-      "tagValue": {
-        "value": "BU"
-      }
-    }
-PARAMS
+}
+
+
+#route table for communicate between spoke2 t0 spoke1 through firewall
+
+resource "azurerm_route_table" "spoke2-udr" {
+
+  name = "spoke2-udr-to-firewall"
+  location = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  route {
+    name = "route-to-firewall"
+    address_prefix = "10.30.1.0/24"
+    next_hop_type = "VirtualAppliance"
+    next_hop_in_ip_address = "10.10.3.4"
+  }
+  
+}
+
+resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association" {
+    for_each = var.subnets
+
+    subnet_id = azurerm_subnet.subnets[each.key].id
+    route_table_id = azurerm_route_table.spoke2-udr.id
 }

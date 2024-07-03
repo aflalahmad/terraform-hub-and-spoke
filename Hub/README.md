@@ -1,3 +1,8 @@
+<!-- BEGIN_TF_DOCS -->
+Hub Resource Group
+This resource groups including virtual networks (VNets) with subnets and network security groups (NSGs) adn virtual network gateway,vpn connection and virtual network integration etc.. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
+
+```hcl
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
     location = var.rg.location
@@ -319,3 +324,153 @@ resource "azurerm_log_analytics_workspace" "log_analytics_workspace" {
   retention_in_days   = 30
 }
 */
+```
+
+<!-- markdownlint-disable MD033 -->
+## Requirements
+
+The following requirements are needed by this module:
+
+- <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) (>= 1.1.0)
+
+- <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) (~> 3.1.0)
+
+## Providers
+
+The following providers are used by this module:
+
+- <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (~> 3.1.0)
+
+## Resources
+
+The following resources are used by this module:
+
+- [azurerm_app_service_virtual_network_swift_connection.vnet_integration](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/app_service_virtual_network_swift_connection) (resource)
+- [azurerm_bastion_host.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/bastion_host) (resource)
+- [azurerm_firewall.firewall](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
+- [azurerm_firewall_policy.application-policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy) (resource)
+- [azurerm_public_ip.publi_ips](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
+- [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_subnet.subnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
+- [azurerm_virtual_network.hubvnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
+- [azurerm_virtual_network_gateway.vnetgateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway) (resource)
+- [azurerm_virtual_network_peering.hub_to_spoke1](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
+- [azurerm_virtual_network_peering.hub_to_spoke2](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
+- [azurerm_virtual_network_peering.spoke1_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
+- [azurerm_virtual_network_peering.spoke2_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
+- [azurerm_app_service.app_service](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/app_service) (data source)
+- [azurerm_virtual_network.spoke1vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
+- [azurerm_virtual_network.spoke2vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
+
+<!-- markdownlint-disable MD013 -->
+## Required Inputs
+
+The following input variables are required:
+
+### <a name="input_address_space"></a> [address\_space](#input\_address\_space)
+
+Description: n/a
+
+Type: `string`
+
+### <a name="input_bastionhost_name"></a> [bastionhost\_name](#input\_bastionhost\_name)
+
+Description: n/a
+
+Type: `string`
+
+### <a name="input_hub_local_network_gateway_name"></a> [hub\_local\_network\_gateway\_name](#input\_hub\_local\_network\_gateway\_name)
+
+Description: n/a
+
+Type: `string`
+
+### <a name="input_publicip_names"></a> [publicip\_names](#input\_publicip\_names)
+
+Description: n/a
+
+Type:
+
+```hcl
+map(object({
+    name = string
+  }))
+```
+
+### <a name="input_rg"></a> [rg](#input\_rg)
+
+Description: n/a
+
+Type:
+
+```hcl
+object({
+      resource_group =string
+      location  = string
+    })
+```
+
+### <a name="input_subnet_details"></a> [subnet\_details](#input\_subnet\_details)
+
+Description: n/a
+
+Type:
+
+```hcl
+map(object({
+    subnet_name = string
+    address_prefixes = string
+  }))
+```
+
+### <a name="input_vnet_name"></a> [vnet\_name](#input\_vnet\_name)
+
+Description: n/a
+
+Type: `string`
+
+### <a name="input_vnet_peerings"></a> [vnet\_peerings](#input\_vnet\_peerings)
+
+Description: Map of vnet peering settings
+
+Type:
+
+```hcl
+map(object({
+    allow_forwarded_traffic      = bool
+    allow_gateway_transit        = bool
+    allow_virtual_network_access = bool
+  }))
+```
+
+## Optional Inputs
+
+No optional inputs.
+
+## Outputs
+
+The following outputs are exported:
+
+### <a name="output_hubvnets"></a> [hubvnets](#output\_hubvnets)
+
+Description: n/a
+
+### <a name="output_rg"></a> [rg](#output\_rg)
+
+Description: n/a
+
+### <a name="output_subnet"></a> [subnet](#output\_subnet)
+
+Description: n/a
+
+### <a name="output_vnetgateway"></a> [vnetgateway](#output\_vnetgateway)
+
+Description: n/a
+
+## Modules
+
+No modules.
+
+Contributing
+We welcome contributions to improve this Terraform module.
+<!-- END_TF_DOCS -->

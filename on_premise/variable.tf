@@ -16,31 +16,17 @@ variable "address_space" {
   
 }
 
-variable "publicip_names" {
-
-  type = map(object({
-    name = string
-  }))
-  
-}
-variable "bastionhost_name" {
-  type = string
-}
 variable "subnet_details"{
   type = map(object({
     subnet_name = string
     address_prefixes = string
   }))
 }
-variable "vnet_peerings" {
-  description = "Map of vnet peering settings"
-  type = map(object({
-    allow_forwarded_traffic      = bool
-    allow_gateway_transit        = bool
-    allow_virtual_network_access = bool
-  }))
+
+variable "public_ip_name" {
+  type = string
 }
 
-variable "hub_local_network_gateway_name" {
+variable "onprem_local_network_gateway_name" {
   type = string
 }
