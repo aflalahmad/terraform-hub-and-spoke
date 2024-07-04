@@ -53,4 +53,5 @@ vms = {
 keyvault_name = "mykeyvault09088"
 rsv_name = "spoke1rescoveryservicevault"
 backuppolicy_name = "spoke1backuppolicy"
+log_analytics_workspace_name = "log-analytics-workspace"
 

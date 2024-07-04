@@ -65,3 +65,6 @@ variable "rsv_name" {
 variable "backuppolicy_name" {
   type = string
 }
+variable "log_analytics_workspace_name" {
+  type = string
+}

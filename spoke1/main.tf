@@ -189,8 +189,6 @@ resource "azurerm_backup_protected_vm" "backup_protected" {
     source_vm_id = each.value.id
     backup_policy_id = azurerm_backup_policy_vm.backup_policy.id
 }
-
-/*
 resource "azurerm_storage_account" "stgacc" {
     
   name = "msystorageaccount"
@@ -203,7 +201,7 @@ resource "azurerm_storage_account" "stgacc" {
     environment = "production"
   }
 }
-
+/*
 resource "azurerm_storage_share" "fileshare" {
 
   name = "myfilshare"
@@ -256,7 +254,7 @@ resource "azurerm_key_vault_secret" "vm_admin_username" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-adminnusername1"
+  name = "${each.value.vm_name}-adminn-username1"
   value = each.value.admin_username
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -266,7 +264,7 @@ resource "azurerm_key_vault_secret" "vm_admin_password" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-adminnnpassword2"
+  name = "${each.value.vm_name}-adminn-npassword2"
   value = each.value.admin_password
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -293,4 +291,199 @@ resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association"
 
     subnet_id = azurerm_subnet.subnets[each.key].id
     route_table_id = azurerm_route_table.spoke1-udr.id
+}
+
+ #Create a Log Analytics Workspace
+
+ resource "azurerm_log_analytics_workspace" "log_analytics" {
+  name                = var.log_analytics_workspace_name
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+#Enable NSG Flow Logs
+
+resource "azurerm_network_watcher" "network_watcher" {
+  name                = "example-network-watcher"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+resource "azurerm_network_watcher_flow_log" "nsg_flow_log" {
+  for_each              = azurerm_network_security_group.nsg
+  name = "nsg-flow-log-${each.key}"
+  network_watcher_name  = azurerm_network_watcher.network_watcher.name
+  resource_group_name   = azurerm_resource_group.rg.name
+  network_security_group_id = each.value.id
+  storage_account_id    = azurerm_storage_account.stgacc.id
+  enabled = true
+
+  retention_policy {
+    enabled = true
+    days    = 30
+  }
+
+  traffic_analytics {
+    enabled               = true
+    workspace_id          = azurerm_log_analytics_workspace.log_analytics.id
+    workspace_region      = azurerm_log_analytics_workspace.log_analytics.location
+    workspace_resource_id = azurerm_log_analytics_workspace.log_analytics.id
+  }
+}
+
+#Enable VNet Flow Logs
+resource "azurerm_monitor_diagnostic_setting" "vnet_diagnostics" {
+  for_each            = azurerm_virtual_network.vnets
+  name                = "vnet-diagnostics-${each.key}"
+  target_resource_id  = each.value.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.log_analytics.id
+
+  log {
+    category = "NetworkSecurityGroupEvent"
+    enabled  = true
+    retention_policy {
+      enabled = true
+      days    = 30
+    }
+  }
+
+  log {
+    category = "NetworkSecurityGroupRuleCounter"
+    enabled  = true
+    retention_policy {
+      enabled = true
+      days    = 30
+    }
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+    retention_policy {
+      enabled = true
+      days    = 30
+    }
+  }
+}
+
+#: Enable Diagnostics Logs via Azure Policy
+resource "azurerm_policy_definition" "diagnostics_policy" {
+  name         = "enable-diagnostics-logs"
+  policy_type  = "Custom"
+  mode         = "Indexed"
+  display_name = "Enable Diagnostics Logs"
+  description  = "Ensure diagnostics logs are enabled for all resources"
+
+  policy_rule = <<POLICY_RULE
+{
+  "if": {
+    "not": {
+      "field": "Microsoft.Insights/diagnosticSettings/logs[*].enabled",
+      "equals": "true"
+    }
+  },
+  "then": {
+    "effect": "deployIfNotExists",
+    "details": {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "existenceCondition": {
+        "field": "Microsoft.Insights/diagnosticSettings/logs[*].enabled",
+        "equals": "true"
+      },
+      "roleDefinitionIds": [
+        "/providers/Microsoft.Authorization/roleDefinitions/..."
+      ],
+      "deployment": {
+        "properties": {
+          "mode": "incremental",
+          "template": {
+            "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+            "contentVersion": "1.0.0.0",
+            "resources": [
+              {
+                "type": "Microsoft.Insights/diagnosticSettings",
+                "apiVersion": "2017-05-01-preview",
+                "name": "[concat(parameters('resourceName'), '-diagnostics')]",
+                "properties": {
+                  "storageAccountId": "[parameters('storageAccountId')]",
+                  "workspaceId": "[parameters('workspaceId')]",
+                  "logs": [
+                    {
+                      "category": "AuditEvent",
+                      "enabled": true,
+                      "retentionPolicy": {
+                        "enabled": true,
+                        "days": 30
+                      }
+                    },
+                    {
+                      "category": "Alert",
+                      "enabled": true,
+                      "retentionPolicy": {
+                        "enabled": true,
+                        "days": 30
+                      }
+                    },
+                    {
+                      "category": "Recommendation",
+                      "enabled": true,
+                      "retentionPolicy": {
+                        "enabled": true,
+                        "days": 30
+                      }
+                    },
+                    {
+                      "category": "Policy",
+                      "enabled": true,
+                      "retentionPolicy": {
+                        "enabled": true,
+                        "days": 30
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "parameters": {
+        "resourceName": {
+          "type": "string",
+          "metadata": {
+            "description": "The name of the resource to enable diagnostics."
+          }
+        },
+        "storageAccountId": {
+          "type": "string",
+          "metadata": {
+            "description": "The ID of the storage account for diagnostic logs."
+          }
+        },
+        "workspaceId": {
+          "type": "string",
+          "metadata": {
+            "description": "The ID of the Log Analytics workspace."
+          }
+        }
+      }
+    }
+  }
+}
+POLICY_RULE
+}
+
+resource "null_resource" "assign_policy" {
+  provisioner "local-exec" {
+    command = <<EOT
+      az policy assignment create --name "assign-diagnostics-policy" --scope "${azurerm_resource_group.rg.id}" --policy "${azurerm_policy_definition.diagnostics_policy.id}" --params '{"workspaceId":"${azurerm_log_analytics_workspace.log_analytics.id}","storageAccountId":"${azurerm_storage_account.stgacc.id}"}'
+    EOT
+  }
+  depends_on = [
+    azurerm_policy_definition.diagnostics_policy,
+    azurerm_log_analytics_workspace.log_analytics,
+    azurerm_storage_account.stgacc
+  ]
 }
