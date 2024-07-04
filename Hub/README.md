@@ -475,43 +475,43 @@ The following outputs are exported:
 
 ### <a name="output_app_service_vnet_integration_id"></a> [app\_service\_vnet\_integration\_id](#output\_app\_service\_vnet\_integration\_id)
 
-Description: n/a
+Description: The ID of the virtual network integration for the App Service.
 
 ### <a name="output_bastion_host_id"></a> [bastion\_host\_id](#output\_bastion\_host\_id)
 
-Description: n/a
+Description: The ID of the Azure Bastion host.
 
 ### <a name="output_firewall_id"></a> [firewall\_id](#output\_firewall\_id)
 
-Description: n/a
+Description: The ID of the Azure Firewall.
 
 ### <a name="output_local_network_gateway_id"></a> [local\_network\_gateway\_id](#output\_local\_network\_gateway\_id)
 
-Description: n/a
+Description: The ID of the local network gateway for on-premises connections.
 
 ### <a name="output_public_ip_ids"></a> [public\_ip\_ids](#output\_public\_ip\_ids)
 
-Description: n/a
+Description: Map of public IP names to their IDs.
 
 ### <a name="output_resource_group_id"></a> [resource\_group\_id](#output\_resource\_group\_id)
 
-Description: n/a
+Description: The ID of the Azure resource group.
 
 ### <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids)
 
-Description: n/a
+Description: Map of subnet names to their IDs in the virtual network.
 
 ### <a name="output_virtual_network_gateway_id"></a> [virtual\_network\_gateway\_id](#output\_virtual\_network\_gateway\_id)
 
-Description: n/a
+Description: The ID of the virtual network gateway.
 
 ### <a name="output_virtual_network_id"></a> [virtual\_network\_id](#output\_virtual\_network\_id)
 
-Description: n/a
+Description: The ID of the virtual network in the hub.
 
 ### <a name="output_vpn_connection_id"></a> [vpn\_connection\_id](#output\_vpn\_connection\_id)
 
-Description: n/a
+Description: The ID of the VPN connection to on-premises network.
 
 ## Modules
 

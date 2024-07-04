@@ -94,35 +94,35 @@ The following outputs are exported:
 
 ### <a name="output_app_service_default_hostname"></a> [app\_service\_default\_hostname](#output\_app\_service\_default\_hostname)
 
-Description: n/a
+Description: The default hostname of the Azure App Service.
 
 ### <a name="output_app_service_id"></a> [app\_service\_id](#output\_app\_service\_id)
 
-Description: n/a
+Description: The ID of the Azure App Service.
 
 ### <a name="output_app_service_identity"></a> [app\_service\_identity](#output\_app\_service\_identity)
 
-Description: n/a
+Description: The managed service identity of the Azure App Service.
 
 ### <a name="output_app_service_inbound_ips"></a> [app\_service\_inbound\_ips](#output\_app\_service\_inbound\_ips)
 
-Description: n/a
+Description: The inbound IP addresses of the Azure App Service.
 
 ### <a name="output_app_service_outbound_ips"></a> [app\_service\_outbound\_ips](#output\_app\_service\_outbound\_ips)
 
-Description: n/a
+Description: The outbound IP addresses of the Azure App Service.
 
 ### <a name="output_app_service_plan_id"></a> [app\_service\_plan\_id](#output\_app\_service\_plan\_id)
 
-Description: n/a
+Description: The ID of the Azure App Service Plan.
 
 ### <a name="output_app_service_site_credential"></a> [app\_service\_site\_credential](#output\_app\_service\_site\_credential)
 
-Description: n/a
+Description: The site credentials of the Azure App Service.
 
 ### <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name)
 
-Description: n/a
+Description: The name of the Azure resource group.
 
 ## Modules
 

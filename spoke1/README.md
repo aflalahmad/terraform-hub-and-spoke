@@ -677,55 +677,55 @@ The following outputs are exported:
 
 ### <a name="output_availability_set_id"></a> [availability\_set\_id](#output\_availability\_set\_id)
 
-Description: n/a
+Description: The ID of the availability set.
 
 ### <a name="output_backup_policy_id"></a> [backup\_policy\_id](#output\_backup\_policy\_id)
 
-Description: n/a
+Description: The ID of the backup policy.
 
 ### <a name="output_key_vault_id"></a> [key\_vault\_id](#output\_key\_vault\_id)
 
-Description: n/a
+Description: The ID of the Azure Key Vault.
 
 ### <a name="output_log_analytics_workspace_id"></a> [log\_analytics\_workspace\_id](#output\_log\_analytics\_workspace\_id)
 
-Description: n/a
+Description: The ID of the Azure Log Analytics Workspace.
 
 ### <a name="output_network_interface_ids"></a> [network\_interface\_ids](#output\_network\_interface\_ids)
 
-Description: n/a
+Description: Map of network interface names to their IDs.
 
 ### <a name="output_network_security_group_ids"></a> [network\_security\_group\_ids](#output\_network\_security\_group\_ids)
 
-Description: n/a
+Description: Map of network security group names to their IDs.
 
 ### <a name="output_network_watcher_id"></a> [network\_watcher\_id](#output\_network\_watcher\_id)
 
-Description: n/a
+Description: The ID of the Azure Network Watcher.
 
 ### <a name="output_recovery_services_vault_id"></a> [recovery\_services\_vault\_id](#output\_recovery\_services\_vault\_id)
 
-Description: n/a
+Description: The ID of the Azure Recovery Services Vault.
 
 ### <a name="output_resource_group_id"></a> [resource\_group\_id](#output\_resource\_group\_id)
 
-Description: n/a
+Description: The ID of the Azure resource group.
 
 ### <a name="output_storage_account_id"></a> [storage\_account\_id](#output\_storage\_account\_id)
 
-Description: n/a
+Description: The ID of the Azure Storage Account.
 
 ### <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids)
 
-Description: n/a
+Description: Map of subnet names to their IDs.
 
 ### <a name="output_virtual_machine_ids"></a> [virtual\_machine\_ids](#output\_virtual\_machine\_ids)
 
-Description: n/a
+Description: Map of virtual machine names to their IDs.
 
 ### <a name="output_virtual_network_ids"></a> [virtual\_network\_ids](#output\_virtual\_network\_ids)
 
-Description: n/a
+Description: Map of virtual network names to their IDs.
 
 ## Modules
 

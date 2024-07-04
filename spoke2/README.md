@@ -344,35 +344,35 @@ The following outputs are exported:
 
 ### <a name="output_nsg_ids"></a> [nsg\_ids](#output\_nsg\_ids)
 
-Description: n/a
+Description: Map of network security group names to their IDs.
 
 ### <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name)
 
-Description: n/a
+Description: The name of the Azure resource group.
 
 ### <a name="output_route_table_ids"></a> [route\_table\_ids](#output\_route\_table\_ids)
 
-Description: n/a
+Description: Map of route table names to their IDs.
 
 ### <a name="output_subnet_associations"></a> [subnet\_associations](#output\_subnet\_associations)
 
-Description: n/a
+Description: Map of subnet names to their associated NSG associations.
 
 ### <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids)
 
-Description: n/a
+Description: Map of subnet names to their IDs.
 
 ### <a name="output_virtual_network_name"></a> [virtual\_network\_name](#output\_virtual\_network\_name)
 
-Description: n/a
+Description: The name of the Azure virtual network.
 
 ### <a name="output_vmss_instances"></a> [vmss\_instances](#output\_vmss\_instances)
 
-Description: n/a
+Description: List of instance IDs in the Azure virtual machine scale set.
 
 ### <a name="output_vmss_name"></a> [vmss\_name](#output\_vmss\_name)
 
-Description: n/a
+Description: The name of the Azure virtual machine scale set.
 
 ## Modules
 

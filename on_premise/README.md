@@ -189,31 +189,31 @@ The following outputs are exported:
 
 ### <a name="output_local_network_gateway_id"></a> [local\_network\_gateway\_id](#output\_local\_network\_gateway\_id)
 
-Description: n/a
+Description: The ID of the local network gateway for on-premises connections.
 
 ### <a name="output_public_ip_id"></a> [public\_ip\_id](#output\_public\_ip\_id)
 
-Description: n/a
+Description: The ID of the public IP address associated with the on-premises virtual network gateway.
 
 ### <a name="output_resource_group_id"></a> [resource\_group\_id](#output\_resource\_group\_id)
 
-Description: n/a
+Description: The ID of the Azure resource group.
 
 ### <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids)
 
-Description: n/a
+Description: Map of subnet names to their IDs in the on-premises virtual network.
 
 ### <a name="output_virtual_network_gateway_ids"></a> [virtual\_network\_gateway\_ids](#output\_virtual\_network\_gateway\_ids)
 
-Description: n/a
+Description: Map of subnet names to their IDs for on-premises virtual network gateways.
 
 ### <a name="output_virtual_network_id"></a> [virtual\_network\_id](#output\_virtual\_network\_id)
 
-Description: n/a
+Description: The ID of the on-premises virtual network.
 
 ### <a name="output_vpn_connection_ids"></a> [vpn\_connection\_ids](#output\_vpn\_connection\_ids)
 
-Description: n/a
+Description: Map of subnet names to their IDs for VPN connections to on-premises network.
 
 ## Modules
 
