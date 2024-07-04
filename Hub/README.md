@@ -30,8 +30,19 @@ resource "azurerm_subnet" "subnet" {
     virtual_network_name = azurerm_virtual_network.hubvnets.name
   
     depends_on = [ azurerm_virtual_network.hubvnets]
-  
+   
+  dynamic "delegation" {
+    for_each = each.value.delegations
+    content {
+      name = delegation.value.name
+      service_delegation {
+        name    = delegation.value.service_delegation
+        actions = delegation.value.actions
+      }
+    }
+  }
 }
+  
 
 #publiips for all
 resource "azurerm_public_ip" "publi_ips" {
@@ -118,6 +129,7 @@ data "azurerm_virtual_network" "spoke1vnet" {
   
 
 }
+
 
 #spoke1 peerings
 
@@ -224,7 +236,7 @@ resource "azurerm_app_service_virtual_network_swift_connection" "vnet_integratio
 }
 
 #connect to on premise
-/*
+
  
  data "azurerm_public_ip" "onprem_publicip" {
    name = "onprem_vnetgatway_publicip"
@@ -243,7 +255,7 @@ resource "azurerm_local_network_gateway" "hub_local_network_gateway" {
     location = azurerm_resource_group.rg.location
     resource_group_name = azurerm_resource_group.rg.name
     gateway_address = data.azurerm_public_ip.onprem_publicip.ip_address
-    address_space = [data.azurerm_virtual_network.onprem_vnet.address_space]
+    address_space = [data.azurerm_virtual_network.onprem_vnet.address_space[0]]
     depends_on = [ azurerm_public_ip.publi_ips,azurerm_virtual_network_gateway.vnetgateway,
      data.azurerm_public_ip.onprem_publicip,data.azurerm_virtual_network.onprem_vnet]
 }
@@ -263,7 +275,7 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
 
 
-*/
+
 
 
 
@@ -350,16 +362,20 @@ The following resources are used by this module:
 - [azurerm_bastion_host.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/bastion_host) (resource)
 - [azurerm_firewall.firewall](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
 - [azurerm_firewall_policy.application-policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy) (resource)
+- [azurerm_local_network_gateway.hub_local_network_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/local_network_gateway) (resource)
 - [azurerm_public_ip.publi_ips](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_subnet.subnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_virtual_network.hubvnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azurerm_virtual_network_gateway.vnetgateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway) (resource)
+- [azurerm_virtual_network_gateway_connection.onprem_vpn_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway_connection) (resource)
 - [azurerm_virtual_network_peering.hub_to_spoke1](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_virtual_network_peering.hub_to_spoke2](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_virtual_network_peering.spoke1_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_virtual_network_peering.spoke2_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_app_service.app_service](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/app_service) (data source)
+- [azurerm_public_ip.onprem_publicip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/public_ip) (data source)
+- [azurerm_virtual_network.onprem_vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 - [azurerm_virtual_network.spoke1vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 - [azurerm_virtual_network.spoke2vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 
@@ -370,25 +386,25 @@ The following input variables are required:
 
 ### <a name="input_address_space"></a> [address\_space](#input\_address\_space)
 
-Description: n/a
+Description: Address space for the virtual network.
 
 Type: `string`
 
 ### <a name="input_bastionhost_name"></a> [bastionhost\_name](#input\_bastionhost\_name)
 
-Description: n/a
+Description: Name of the Bastion host.
 
 Type: `string`
 
 ### <a name="input_hub_local_network_gateway_name"></a> [hub\_local\_network\_gateway\_name](#input\_hub\_local\_network\_gateway\_name)
 
-Description: n/a
+Description: Name of the hub's local network gateway.
 
 Type: `string`
 
 ### <a name="input_publicip_names"></a> [publicip\_names](#input\_publicip\_names)
 
-Description: n/a
+Description: Map of public IP names.
 
 Type:
 
@@ -400,39 +416,44 @@ map(object({
 
 ### <a name="input_rg"></a> [rg](#input\_rg)
 
-Description: n/a
+Description: Specifies the resource group details.
 
 Type:
 
 ```hcl
 object({
-      resource_group =string
-      location  = string
-    })
+    resource_group = string
+    location       = string
+  })
 ```
 
 ### <a name="input_subnet_details"></a> [subnet\_details](#input\_subnet\_details)
 
-Description: n/a
+Description: Map of subnet details.
 
 Type:
 
 ```hcl
 map(object({
-    subnet_name = string
-    address_prefixes = string
+    subnet_name       = string
+    address_prefixes  = string
+    delegations       = list(object({
+      name              = string
+      service_delegation = string
+      actions           = list(string)
+    }))
   }))
 ```
 
 ### <a name="input_vnet_name"></a> [vnet\_name](#input\_vnet\_name)
 
-Description: n/a
+Description: Name of the virtual network.
 
 Type: `string`
 
 ### <a name="input_vnet_peerings"></a> [vnet\_peerings](#input\_vnet\_peerings)
 
-Description: Map of vnet peering settings
+Description: Map of VNet peering settings.
 
 Type:
 
@@ -452,19 +473,43 @@ No optional inputs.
 
 The following outputs are exported:
 
-### <a name="output_hubvnets"></a> [hubvnets](#output\_hubvnets)
+### <a name="output_app_service_vnet_integration_id"></a> [app\_service\_vnet\_integration\_id](#output\_app\_service\_vnet\_integration\_id)
 
 Description: n/a
 
-### <a name="output_rg"></a> [rg](#output\_rg)
+### <a name="output_bastion_host_id"></a> [bastion\_host\_id](#output\_bastion\_host\_id)
 
 Description: n/a
 
-### <a name="output_subnet"></a> [subnet](#output\_subnet)
+### <a name="output_firewall_id"></a> [firewall\_id](#output\_firewall\_id)
 
 Description: n/a
 
-### <a name="output_vnetgateway"></a> [vnetgateway](#output\_vnetgateway)
+### <a name="output_local_network_gateway_id"></a> [local\_network\_gateway\_id](#output\_local\_network\_gateway\_id)
+
+Description: n/a
+
+### <a name="output_public_ip_ids"></a> [public\_ip\_ids](#output\_public\_ip\_ids)
+
+Description: n/a
+
+### <a name="output_resource_group_id"></a> [resource\_group\_id](#output\_resource\_group\_id)
+
+Description: n/a
+
+### <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids)
+
+Description: n/a
+
+### <a name="output_virtual_network_gateway_id"></a> [virtual\_network\_gateway\_id](#output\_virtual\_network\_gateway\_id)
+
+Description: n/a
+
+### <a name="output_virtual_network_id"></a> [virtual\_network\_id](#output\_virtual\_network\_id)
+
+Description: n/a
+
+### <a name="output_vpn_connection_id"></a> [vpn\_connection\_id](#output\_vpn\_connection\_id)
 
 Description: n/a
 

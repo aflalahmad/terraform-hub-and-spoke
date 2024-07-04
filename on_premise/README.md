@@ -131,51 +131,51 @@ The following input variables are required:
 
 ### <a name="input_address_space"></a> [address\_space](#input\_address\_space)
 
-Description: n/a
+Description: Address space for the virtual network.
 
 Type: `string`
 
 ### <a name="input_onprem_local_network_gateway_name"></a> [onprem\_local\_network\_gateway\_name](#input\_onprem\_local\_network\_gateway\_name)
 
-Description: n/a
+Description: Name of the on-premises local network gateway.
 
 Type: `string`
 
 ### <a name="input_public_ip_name"></a> [public\_ip\_name](#input\_public\_ip\_name)
 
-Description: n/a
+Description: Name of the public IP.
 
 Type: `string`
 
 ### <a name="input_rg"></a> [rg](#input\_rg)
 
-Description: n/a
+Description: Specifies the resource group details.
 
 Type:
 
 ```hcl
 object({
-      resource_group =string
-      location  = string
-    })
+    resource_group = string
+    location       = string
+  })
 ```
 
 ### <a name="input_subnet_details"></a> [subnet\_details](#input\_subnet\_details)
 
-Description: n/a
+Description: Map of subnet details.
 
 Type:
 
 ```hcl
 map(object({
-    subnet_name = string
+    subnet_name      = string
     address_prefixes = string
   }))
 ```
 
 ### <a name="input_vnet_name"></a> [vnet\_name](#input\_vnet\_name)
 
-Description: n/a
+Description: Name of the virtual network.
 
 Type: `string`
 
@@ -185,7 +185,35 @@ No optional inputs.
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_local_network_gateway_id"></a> [local\_network\_gateway\_id](#output\_local\_network\_gateway\_id)
+
+Description: n/a
+
+### <a name="output_public_ip_id"></a> [public\_ip\_id](#output\_public\_ip\_id)
+
+Description: n/a
+
+### <a name="output_resource_group_id"></a> [resource\_group\_id](#output\_resource\_group\_id)
+
+Description: n/a
+
+### <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids)
+
+Description: n/a
+
+### <a name="output_virtual_network_gateway_ids"></a> [virtual\_network\_gateway\_ids](#output\_virtual\_network\_gateway\_ids)
+
+Description: n/a
+
+### <a name="output_virtual_network_id"></a> [virtual\_network\_id](#output\_virtual\_network\_id)
+
+Description: n/a
+
+### <a name="output_vpn_connection_ids"></a> [vpn\_connection\_ids](#output\_vpn\_connection\_ids)
+
+Description: n/a
 
 ## Modules
 

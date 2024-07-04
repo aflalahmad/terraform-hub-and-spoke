@@ -95,6 +95,7 @@ resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
     }
   }
 }
+/*
 #Daily backup for VM
 # Recovery Services Vault
 resource "azurerm_recovery_services_vault" "rsv" {
@@ -148,7 +149,7 @@ resource "azurerm_backup_protected_vm" "backup_protected" {
   backup_policy_id    = azurerm_backup_policy_vm.backup_policy.id
   depends_on = [ azurerm_windows_virtual_machine_scale_set.vmss,azurerm_backup_policy_vm.backup_policy ]
 }
-*/
+
 
 #Service deployments should be limited to specific Azure regions via Azure Policy. 
 resource "azurerm_policy_definition" "limit_deployment_regions" {
@@ -183,7 +184,7 @@ resource "azurerm_resource_group_policy_assignment" "example" {
 
 }
 
-
+*/
 #route table for communicate between spoke2 t0 spoke1 through firewall
 
 resource "azurerm_route_table" "spoke2-udr" {
@@ -228,12 +229,8 @@ The following providers are used by this module:
 
 The following resources are used by this module:
 
-- [azurerm_backup_policy_vm.backup_policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/backup_policy_vm) (resource)
 - [azurerm_network_security_group.nsg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_group) (resource)
-- [azurerm_policy_definition.limit_deployment_regions](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/policy_definition) (resource)
-- [azurerm_recovery_services_vault.rsv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/recovery_services_vault) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
-- [azurerm_resource_group_policy_assignment.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group_policy_assignment) (resource)
 - [azurerm_route_table.spoke2-udr](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
 - [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_network_security_group_association.nsg-association](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_network_security_group_association) (resource)
@@ -248,76 +245,76 @@ The following input variables are required:
 
 ### <a name="input_admin_password"></a> [admin\_password](#input\_admin\_password)
 
-Description: n/a
+Description: Admin password for virtual machines.
 
 Type: `string`
 
 ### <a name="input_admin_username"></a> [admin\_username](#input\_admin\_username)
 
-Description: n/a
+Description: Admin username for virtual machines.
 
 Type: `string`
 
 ### <a name="input_backuppolicy_name"></a> [backuppolicy\_name](#input\_backuppolicy\_name)
 
-Description: n/a
+Description: Name of the backup policy.
 
 Type: `string`
 
 ### <a name="input_instance"></a> [instance](#input\_instance)
 
-Description: n/a
+Description: Instance count.
 
 Type: `number`
 
 ### <a name="input_rg"></a> [rg](#input\_rg)
 
-Description: n/a
+Description: Specifies the resource group details.
 
 Type:
 
 ```hcl
 object({
-      resource_group =string
-      location  = string
-    })
+    resource_group = string
+    location       = string
+  })
 ```
 
 ### <a name="input_rsv_name"></a> [rsv\_name](#input\_rsv\_name)
 
-Description: n/a
+Description: Name of the Reserved Instance.
 
 Type: `string`
 
 ### <a name="input_sku"></a> [sku](#input\_sku)
 
-Description: n/a
+Description: SKU of the product.
 
 Type: `string`
 
 ### <a name="input_subnets"></a> [subnets](#input\_subnets)
 
-Description: n/a
+Description: Map of subnet configurations.
 
 Type:
 
 ```hcl
 map(object({
-    name=string
-    vnet=string
+    name             = string
+    vnet             = string
     address_prefixes = string
   }))
 ```
 
 ### <a name="input_vmss_name"></a> [vmss\_name](#input\_vmss\_name)
 
-Description: n/a
+Description: Name of the Virtual Machine Scale Set (VMSS).
 
 Type: `string`
 
 ### <a name="input_vnet_name"></a> [vnet\_name](#input\_vnet\_name)
 
-Description: n/a
+Description: Name of the virtual network.
 
 Type: `string`
 
@@ -327,15 +324,15 @@ The following input variables are optional (have default values):
 
 ### <a name="input_nsg_count"></a> [nsg\_count](#input\_nsg\_count)
 
-Description: The count value must be in number
+Description: Number of NSGs to deploy.
 
 Type: `string`
 
-Default: `2`
+Default: `"2"`
 
 ### <a name="input_rules_file"></a> [rules\_file](#input\_rules\_file)
 
-Description: The rules files must be saved in .csv file name.
+Description: Name of the CSV file containing rules.
 
 Type: `string`
 
@@ -343,7 +340,39 @@ Default: `"rules-20.csv"`
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_nsg_ids"></a> [nsg\_ids](#output\_nsg\_ids)
+
+Description: n/a
+
+### <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name)
+
+Description: n/a
+
+### <a name="output_route_table_ids"></a> [route\_table\_ids](#output\_route\_table\_ids)
+
+Description: n/a
+
+### <a name="output_subnet_associations"></a> [subnet\_associations](#output\_subnet\_associations)
+
+Description: n/a
+
+### <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids)
+
+Description: n/a
+
+### <a name="output_virtual_network_name"></a> [virtual\_network\_name](#output\_virtual\_network\_name)
+
+Description: n/a
+
+### <a name="output_vmss_instances"></a> [vmss\_instances](#output\_vmss\_instances)
+
+Description: n/a
+
+### <a name="output_vmss_name"></a> [vmss\_name](#output\_vmss\_name)
+
+Description: n/a
 
 ## Modules
 

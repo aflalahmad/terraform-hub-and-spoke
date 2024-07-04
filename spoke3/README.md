@@ -61,27 +61,27 @@ The following input variables are required:
 
 ### <a name="input_appservice_name"></a> [appservice\_name](#input\_appservice\_name)
 
-Description: n/a
+Description: Name of the App Service.
 
 Type: `string`
 
 ### <a name="input_appserviceplan_name"></a> [appserviceplan\_name](#input\_appserviceplan\_name)
 
-Description: n/a
+Description: Name of the App Service Plan.
 
 Type: `string`
 
 ### <a name="input_rg"></a> [rg](#input\_rg)
 
-Description: n/a
+Description: Specifies the resource group details.
 
 Type:
 
 ```hcl
 object({
-      resource_group =string
-      location  = string
-    })
+    resource_group = string
+    location       = string
+  })
 ```
 
 ## Optional Inputs
@@ -90,7 +90,39 @@ No optional inputs.
 
 ## Outputs
 
-No outputs.
+The following outputs are exported:
+
+### <a name="output_app_service_default_hostname"></a> [app\_service\_default\_hostname](#output\_app\_service\_default\_hostname)
+
+Description: n/a
+
+### <a name="output_app_service_id"></a> [app\_service\_id](#output\_app\_service\_id)
+
+Description: n/a
+
+### <a name="output_app_service_identity"></a> [app\_service\_identity](#output\_app\_service\_identity)
+
+Description: n/a
+
+### <a name="output_app_service_inbound_ips"></a> [app\_service\_inbound\_ips](#output\_app\_service\_inbound\_ips)
+
+Description: n/a
+
+### <a name="output_app_service_outbound_ips"></a> [app\_service\_outbound\_ips](#output\_app\_service\_outbound\_ips)
+
+Description: n/a
+
+### <a name="output_app_service_plan_id"></a> [app\_service\_plan\_id](#output\_app\_service\_plan\_id)
+
+Description: n/a
+
+### <a name="output_app_service_site_credential"></a> [app\_service\_site\_credential](#output\_app\_service\_site\_credential)
+
+Description: n/a
+
+### <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name)
+
+Description: n/a
 
 ## Modules
 

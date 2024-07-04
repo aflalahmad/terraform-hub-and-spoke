@@ -195,8 +195,6 @@ resource "azurerm_backup_protected_vm" "backup_protected" {
     source_vm_id = each.value.id
     backup_policy_id = azurerm_backup_policy_vm.backup_policy.id
 }
-
-/*
 resource "azurerm_storage_account" "stgacc" {
     
   name = "msystorageaccount"
@@ -209,7 +207,7 @@ resource "azurerm_storage_account" "stgacc" {
     environment = "production"
   }
 }
-
+/*
 resource "azurerm_storage_share" "fileshare" {
 
   name = "myfilshare"
@@ -262,7 +260,7 @@ resource "azurerm_key_vault_secret" "vm_admin_username" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-adminnusername"
+  name = "${each.value.vm_name}-adminn-username1"
   value = each.value.admin_username
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -272,7 +270,7 @@ resource "azurerm_key_vault_secret" "vm_admin_password" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-adminnnpassword"
+  name = "${each.value.vm_name}-adminn-npassword2"
   value = each.value.admin_password
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -300,6 +298,224 @@ resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association"
     subnet_id = azurerm_subnet.subnets[each.key].id
     route_table_id = azurerm_route_table.spoke1-udr.id
 }
+
+# Log Analytics Workspace
+resource "azurerm_log_analytics_workspace" "log_analytics" {
+  name                = var.log_analytics_workspace_name
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+
+
+# Ensure a Network Watcher exists in the region
+resource "azurerm_network_watcher" "network_watcher" {
+  name                = "networkWatcher_${var.rg.location}"
+  location            = var.rg.location
+  resource_group_name = "NetworkWatcherRG"
+}
+
+# Enable NSG Flow Logs
+resource "azurerm_network_watcher_flow_log" "nsg_flow_log" {
+  for_each                  = azurerm_network_security_group.nsg
+  name                      = "nsg-flow-log-${each.key}"
+  network_watcher_name      = azurerm_network_watcher.network_watcher.name
+  resource_group_name       = azurerm_resource_group.rg.name
+  network_security_group_id = each.value.id
+  storage_account_id        = azurerm_storage_account.stgacc.id
+  enabled                   = true
+
+  retention_policy {
+    enabled = true
+    days    = 30
+  }
+ traffic_analytics {
+    enabled               = true
+    workspace_id          = azurerm_log_analytics_workspace.log_analytics.workspace_id
+    workspace_region      = azurerm_log_analytics_workspace.log_analytics.location
+    workspace_resource_id = azurerm_log_analytics_workspace.log_analytics.id
+  }
+}
+
+# Enable VNet Flow Logs
+resource "azurerm_monitor_diagnostic_setting" "vnet_diagnostics" {
+  for_each            = azurerm_virtual_network.vnets
+  name                = "vnet-diagnostics-${each.key}"
+  target_resource_id  = each.value.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.log_analytics.id
+
+  log {
+    category = "NetworkSecurityGroupEvent"
+    enabled  = true
+    retention_policy {
+      enabled = true
+      days    = 30
+    }
+  }
+
+  log {
+    category = "NetworkSecurityGroupRuleCounter"
+    enabled  = true
+    retention_policy {
+      enabled = true
+      days    = 30
+    }
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+    retention_policy {
+      enabled = true
+      days    = 30
+    }
+  }
+
+  // Exclude unsupported category here
+  dynamic "log" {
+    for_each = [ "AuditEvent", "Alert", "Recommendation", "Policy" ]  # Update this list as per your needs
+    content {
+      category = log.value
+      enabled  = true
+      retention_policy {
+        enabled = true
+        days    = 30
+      }
+    }
+  }
+}
+
+/*
+# Enable Diagnostics Logs via Azure Policy
+resource "azurerm_policy_definition" "diagnostics_policy" {
+  name         = "mypolicy"
+  policy_type  = "Custom"
+  mode         = "All"
+  display_name = "Enable Diagnostics Logs"
+  description  = "Ensure diagnostics logs are enabled for all resources"
+
+  policy_rule = <<POLICY_RULE
+{
+  "if": {
+    "field": "type",
+    "in": [
+      "Microsoft.Compute/virtualMachines",
+      "Microsoft.Network/networkSecurityGroups",
+      "Microsoft.Network/virtualNetworks"
+    ]
+  },
+  "then": {
+    "effect": "DeployIfNotExists",
+    "details": {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "existenceCondition": {
+        "field": "Microsoft.Insights/diagnosticSettings/logs[*].enabled",
+        "equals": "true"
+      },
+      "roleDefinitionIds": [
+        "/providers/Microsoft.Authorization/roleDefinitions/..."
+      ],
+      "deployment": {
+        "properties": {
+          "mode": "incremental",
+          "template": {
+            "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+            "contentVersion": "1.0.0.0",
+            "resources": [
+              {
+                "type": "Microsoft.Insights/diagnosticSettings",
+                "apiVersion": "2017-05-01-preview",
+                "name": "[concat(parameters('resourceName'), '-diagnostics')]",
+                "properties": {
+                  "storageAccountId": "[parameters('storageAccountId')]",
+                  "workspaceId": "[parameters('workspaceId')]",
+                  "logs": [
+                    {
+                      "category": "AuditEvent",
+                      "enabled": true,
+                      "retentionPolicy": {
+                        "enabled": true,
+                        "days": 30
+                      }
+                    },
+                    {
+                      "category": "Alert",
+                      "enabled": true,
+                      "retentionPolicy": {
+                        "enabled": true,
+                        "days": 30
+                      }
+                    },
+                    {
+                      "category": "Recommendation",
+                      "enabled": true,
+                      "retentionPolicy": {
+                        "enabled": true,
+                        "days": 30
+                      }
+                    },
+                    {
+                      "category": "Policy",
+                      "enabled": true,
+                      "retentionPolicy": {
+                        "enabled": true,
+                        "days": 30
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "parameters": {
+        "resourceName": {
+          "type": "string",
+          "metadata": {
+            "description": "The name of the resource to enable diagnostics."
+          }
+        },
+        "storageAccountId": {
+          "type": "string",
+          "metadata": {
+            "description": "The ID of the storage account for diagnostic logs."
+          }
+        },
+        "workspaceId": {
+          "type": "string",
+          "metadata": {
+            "description": "The ID of the Log Analytics workspace."
+          }
+        }
+      }
+    }
+  }
+}
+POLICY_RULE
+}
+resource "azurerm_policy_assignment" "assign_policy" {
+  name                 = "assign-diagnostics-policy"
+  scope                = azurerm_resource_group.rg.id
+  policy_definition_id = azurerm_policy_definition.diagnostics_policy.id
+  display_name         = "Assign Diagnostics Policy"
+  description          = "Ensure diagnostics logs are enabled for all resources"
+  
+  parameters = jsonencode({
+    resourceName     = null
+    storageAccountId = azurerm_storage_account.stgacc.id
+    workspaceId      = azurerm_log_analytics_workspace.log_analytics.id
+  })
+
+  depends_on = [
+    azurerm_policy_definition.diagnostics_policy,
+    azurerm_log_analytics_workspace.log_analytics,
+    azurerm_storage_account.stgacc
+  ]
+}
+*/
 ```
 
 <!-- markdownlint-disable MD033 -->
@@ -329,11 +545,16 @@ The following resources are used by this module:
 - [azurerm_key_vault.kv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault) (resource)
 - [azurerm_key_vault_secret.vm_admin_password](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
 - [azurerm_key_vault_secret.vm_admin_username](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
+- [azurerm_log_analytics_workspace.log_analytics](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_workspace) (resource)
+- [azurerm_monitor_diagnostic_setting.vnet_diagnostics](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
 - [azurerm_network_interface.nic](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface) (resource)
 - [azurerm_network_security_group.nsg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_group) (resource)
+- [azurerm_network_watcher.network_watcher](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_watcher) (resource)
+- [azurerm_network_watcher_flow_log.nsg_flow_log](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_watcher_flow_log) (resource)
 - [azurerm_recovery_services_vault.rsv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/recovery_services_vault) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_route_table.spoke1-udr](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
+- [azurerm_storage_account.stgacc](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) (resource)
 - [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_network_security_group_association.nsg-association](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_network_security_group_association) (resource)
 - [azurerm_subnet_route_table_association.spoke1udr_subnet_association](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
@@ -349,79 +570,84 @@ The following input variables are required:
 
 ### <a name="input_backuppolicy_name"></a> [backuppolicy\_name](#input\_backuppolicy\_name)
 
-Description: n/a
+Description: Name of the backup policy.
 
 Type: `string`
 
 ### <a name="input_keyvault_name"></a> [keyvault\_name](#input\_keyvault\_name)
 
-Description: n/a
+Description: Name of the Azure Key Vault.
+
+Type: `string`
+
+### <a name="input_log_analytics_workspace_name"></a> [log\_analytics\_workspace\_name](#input\_log\_analytics\_workspace\_name)
+
+Description: Name of the Log Analytics workspace.
 
 Type: `string`
 
 ### <a name="input_rg"></a> [rg](#input\_rg)
 
-Description: n/a
+Description: Specifies the resource group details.
 
 Type:
 
 ```hcl
 object({
-      resource_group =string
-      location  = string
-    })
+    resource_group = string
+    location       = string
+  })
 ```
 
 ### <a name="input_rsv_name"></a> [rsv\_name](#input\_rsv\_name)
 
-Description: n/a
+Description: Name of the Reserved Instance.
 
 Type: `string`
 
 ### <a name="input_subnets"></a> [subnets](#input\_subnets)
 
-Description: n/a
+Description: Map of subnet configurations.
 
 Type:
 
 ```hcl
 map(object({
-      name = string
-      vnet = string
-      address_prefixes = string
-      
-    }))
+    name             = string
+    vnet             = string
+    address_prefixes = string
+  }))
 ```
 
 ### <a name="input_vms"></a> [vms](#input\_vms)
 
-Description: n/a
+Description: Map of virtual machine configurations.
 
 Type:
 
 ```hcl
 map(object({
-    vm_name = string
-    nic_name = string
-    host_name = string
-    disk_name = string
-    vm_size = string
-    admin_username = string
-    admin_password = string
+    vm_name          = string
+    nic_name         = string
+    host_name        = string
+    disk_name        = string
+    vm_size          = string
+    admin_username   = string
+    admin_password   = string
     data_disk_size_gb = number
-    subnet = string
+    subnet           = string
   }))
 ```
 
 ### <a name="input_vnets"></a> [vnets](#input\_vnets)
 
-Description: The virtual network value must not be empty
+Description: Map of virtual network details.
 
 Type:
 
 ```hcl
 map(object({
-    address_space  = string
+    address_space = string
   }))
 ```
 
@@ -431,15 +657,15 @@ The following input variables are optional (have default values):
 
 ### <a name="input_nsg_count"></a> [nsg\_count](#input\_nsg\_count)
 
-Description: The count value must be in number
+Description: Number of NSGs to deploy.
 
 Type: `string`
 
-Default: `2`
+Default: `"2"`
 
 ### <a name="input_rules_file"></a> [rules\_file](#input\_rules\_file)
 
-Description: The rules files must be saved in .csv file name.
+Description: Name of the CSV file containing rules.
 
 Type: `string`
 
@@ -449,19 +675,55 @@ Default: `"rules-20.csv"`
 
 The following outputs are exported:
 
-### <a name="output_current_object_id"></a> [current\_object\_id](#output\_current\_object\_id)
+### <a name="output_availability_set_id"></a> [availability\_set\_id](#output\_availability\_set\_id)
 
 Description: n/a
 
-### <a name="output_rg"></a> [rg](#output\_rg)
+### <a name="output_backup_policy_id"></a> [backup\_policy\_id](#output\_backup\_policy\_id)
 
 Description: n/a
 
-### <a name="output_subnets"></a> [subnets](#output\_subnets)
+### <a name="output_key_vault_id"></a> [key\_vault\_id](#output\_key\_vault\_id)
 
 Description: n/a
 
-### <a name="output_vnets"></a> [vnets](#output\_vnets)
+### <a name="output_log_analytics_workspace_id"></a> [log\_analytics\_workspace\_id](#output\_log\_analytics\_workspace\_id)
+
+Description: n/a
+
+### <a name="output_network_interface_ids"></a> [network\_interface\_ids](#output\_network\_interface\_ids)
+
+Description: n/a
+
+### <a name="output_network_security_group_ids"></a> [network\_security\_group\_ids](#output\_network\_security\_group\_ids)
+
+Description: n/a
+
+### <a name="output_network_watcher_id"></a> [network\_watcher\_id](#output\_network\_watcher\_id)
+
+Description: n/a
+
+### <a name="output_recovery_services_vault_id"></a> [recovery\_services\_vault\_id](#output\_recovery\_services\_vault\_id)
+
+Description: n/a
+
+### <a name="output_resource_group_id"></a> [resource\_group\_id](#output\_resource\_group\_id)
+
+Description: n/a
+
+### <a name="output_storage_account_id"></a> [storage\_account\_id](#output\_storage\_account\_id)
+
+Description: n/a
+
+### <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids)
+
+Description: n/a
+
+### <a name="output_virtual_machine_ids"></a> [virtual\_machine\_ids](#output\_virtual\_machine\_ids)
+
+Description: n/a
+
+### <a name="output_virtual_network_ids"></a> [virtual\_network\_ids](#output\_virtual\_network\_ids)
 
 Description: n/a
 

@@ -293,9 +293,8 @@ resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association"
     route_table_id = azurerm_route_table.spoke1-udr.id
 }
 
- #Create a Log Analytics Workspace
-
- resource "azurerm_log_analytics_workspace" "log_analytics" {
+# Log Analytics Workspace
+resource "azurerm_log_analytics_workspace" "log_analytics" {
   name                = var.log_analytics_workspace_name
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -303,37 +302,38 @@ resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association"
   retention_in_days   = 30
 }
 
-#Enable NSG Flow Logs
 
+
+# Ensure a Network Watcher exists in the region
 resource "azurerm_network_watcher" "network_watcher" {
-  name                = "example-network-watcher"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  name                = "networkWatcher_${var.rg.location}"
+  location            = var.rg.location
+  resource_group_name = "NetworkWatcherRG"
 }
 
+# Enable NSG Flow Logs
 resource "azurerm_network_watcher_flow_log" "nsg_flow_log" {
-  for_each              = azurerm_network_security_group.nsg
-  name = "nsg-flow-log-${each.key}"
-  network_watcher_name  = azurerm_network_watcher.network_watcher.name
-  resource_group_name   = azurerm_resource_group.rg.name
+  for_each                  = azurerm_network_security_group.nsg
+  name                      = "nsg-flow-log-${each.key}"
+  network_watcher_name      = azurerm_network_watcher.network_watcher.name
+  resource_group_name       = azurerm_resource_group.rg.name
   network_security_group_id = each.value.id
-  storage_account_id    = azurerm_storage_account.stgacc.id
-  enabled = true
+  storage_account_id        = azurerm_storage_account.stgacc.id
+  enabled                   = true
 
   retention_policy {
     enabled = true
     days    = 30
   }
-
-  traffic_analytics {
+ traffic_analytics {
     enabled               = true
-    workspace_id          = azurerm_log_analytics_workspace.log_analytics.id
+    workspace_id          = azurerm_log_analytics_workspace.log_analytics.workspace_id
     workspace_region      = azurerm_log_analytics_workspace.log_analytics.location
     workspace_resource_id = azurerm_log_analytics_workspace.log_analytics.id
   }
 }
 
-#Enable VNet Flow Logs
+# Enable VNet Flow Logs
 resource "azurerm_monitor_diagnostic_setting" "vnet_diagnostics" {
   for_each            = azurerm_virtual_network.vnets
   name                = "vnet-diagnostics-${each.key}"
@@ -366,26 +366,42 @@ resource "azurerm_monitor_diagnostic_setting" "vnet_diagnostics" {
       days    = 30
     }
   }
+
+  // Exclude unsupported category here
+  dynamic "log" {
+    for_each = [ "AuditEvent", "Alert", "Recommendation", "Policy" ]  # Update this list as per your needs
+    content {
+      category = log.value
+      enabled  = true
+      retention_policy {
+        enabled = true
+        days    = 30
+      }
+    }
+  }
 }
 
-#: Enable Diagnostics Logs via Azure Policy
+/*
+# Enable Diagnostics Logs via Azure Policy
 resource "azurerm_policy_definition" "diagnostics_policy" {
-  name         = "enable-diagnostics-logs"
+  name         = "mypolicy"
   policy_type  = "Custom"
-  mode         = "Indexed"
+  mode         = "All"
   display_name = "Enable Diagnostics Logs"
   description  = "Ensure diagnostics logs are enabled for all resources"
 
   policy_rule = <<POLICY_RULE
 {
   "if": {
-    "not": {
-      "field": "Microsoft.Insights/diagnosticSettings/logs[*].enabled",
-      "equals": "true"
-    }
+    "field": "type",
+    "in": [
+      "Microsoft.Compute/virtualMachines",
+      "Microsoft.Network/networkSecurityGroups",
+      "Microsoft.Network/virtualNetworks"
+    ]
   },
   "then": {
-    "effect": "deployIfNotExists",
+    "effect": "DeployIfNotExists",
     "details": {
       "type": "Microsoft.Insights/diagnosticSettings",
       "existenceCondition": {
@@ -474,16 +490,23 @@ resource "azurerm_policy_definition" "diagnostics_policy" {
 }
 POLICY_RULE
 }
+resource "azurerm_policy_assignment" "assign_policy" {
+  name                 = "assign-diagnostics-policy"
+  scope                = azurerm_resource_group.rg.id
+  policy_definition_id = azurerm_policy_definition.diagnostics_policy.id
+  display_name         = "Assign Diagnostics Policy"
+  description          = "Ensure diagnostics logs are enabled for all resources"
+  
+  parameters = jsonencode({
+    resourceName     = null
+    storageAccountId = azurerm_storage_account.stgacc.id
+    workspaceId      = azurerm_log_analytics_workspace.log_analytics.id
+  })
 
-resource "null_resource" "assign_policy" {
-  provisioner "local-exec" {
-    command = <<EOT
-      az policy assignment create --name "assign-diagnostics-policy" --scope "${azurerm_resource_group.rg.id}" --policy "${azurerm_policy_definition.diagnostics_policy.id}" --params '{"workspaceId":"${azurerm_log_analytics_workspace.log_analytics.id}","storageAccountId":"${azurerm_storage_account.stgacc.id}"}'
-    EOT
-  }
   depends_on = [
     azurerm_policy_definition.diagnostics_policy,
     azurerm_log_analytics_workspace.log_analytics,
     azurerm_storage_account.stgacc
   ]
 }
+*/
