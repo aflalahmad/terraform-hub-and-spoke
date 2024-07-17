@@ -19,3 +19,8 @@ variable "appservice_name" {
   type        = string
   description = "Name of the App Service."
 }
+
+variable "vnet_name" {
+  type        = string
+  description = "Name of the virtual network."
+}

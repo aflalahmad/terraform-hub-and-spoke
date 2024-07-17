@@ -41,3 +41,22 @@ variable "onprem_local_network_gateway_name" {
   type        = string
   description = "Name of the on-premises local network gateway."
 }
+
+variable "vms" {
+  type        = map(object({
+    vm_name          = string
+    nic_name         = string
+    host_name        = string
+    disk_name        = string
+    vm_size          = string
+    admin_username   = string
+    admin_password   = string
+    data_disk_size_gb = number
+    subnet           = string
+  }))
+  description = "Map of virtual machine configurations."
+  validation {
+    condition     = length(keys(var.vms)) > 0
+    error_message = "At least one virtual machine must be defined."
+  }
+}

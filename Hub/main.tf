@@ -109,13 +109,36 @@ resource "azurerm_firewall" "firewall" {
 }
 
 #firewall policy
-resource "azurerm_firewall_policy" "application-policy" {
-  name                = "firewall-application-policy"
+resource "azurerm_firewall_policy" "policy" {
+  name                = "firewall-policy"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
 
   base_policy_id      = null
+  
 }
+
+resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
+
+  name = "firewall-network-rule"
+  firewall_policy_id = azurerm_firewall_policy.policy.id
+  priority = 100
+ network_rule_collection {
+    name     = "AllowICMP_Rules"
+    priority = 100
+     action       = "Deny"
+
+    rule {
+      name         = "AllowICMP"
+      protocols = "ICMP"
+      destination_ports = "80"
+      source_addresses = "10.20.0.0/16"  
+      destination_addresses = "10.30.0.0/16"
+    }
+  }
+}
+
+
 
 data "azurerm_virtual_network" "spoke1vnet" {
   name = "spoke1VNet"
@@ -214,20 +237,56 @@ resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
     ]
 }
 
+#spoke3 to hub peering
 
-#virtual network integration with spoke3
-
-data "azurerm_app_service" "app_service" {
-  name = "myappservice7789"
+data "azurerm_virtual_network" "spoke3vnet" {
+  name = "spoke3_vnet"
   resource_group_name = "spoke3RG"
+  
   
 }
 
-resource "azurerm_app_service_virtual_network_swift_connection" "vnet_integration" {
-  app_service_id = data.azurerm_app_service.app_service.id
-  subnet_id = azurerm_subnet.subnet["hub_integration"].id
-  depends_on = [ data.azurerm_app_service.app_service,azurerm_subnet.subnet]
+
+resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
+    for_each = var.vnet_peerings
+
+    name                     = "spoke3-to-hub-peering-${each.key}"  
+    virtual_network_name     = data.azurerm_virtual_network.spoke3vnet.name
+    remote_virtual_network_id = azurerm_virtual_network.hubvnets.id
+
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
+
+    resource_group_name = data.azurerm_virtual_network.spoke3vnet.resource_group_name
+
+    depends_on = [
+        data.azurerm_virtual_network.spoke3vnet,
+        azurerm_virtual_network.hubvnets
+    ]
 }
+
+resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
+    for_each = var.vnet_peerings
+
+    name                     = "hub-to-spoke3-peering-${each.key}" 
+    virtual_network_name     = azurerm_virtual_network.hubvnets.name
+    remote_virtual_network_id = data.azurerm_virtual_network.spoke3vnet.id
+
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
+
+    resource_group_name = azurerm_resource_group.rg.name
+
+    depends_on = [
+        data.azurerm_virtual_network.spoke3vnet,
+        azurerm_virtual_network.hubvnets
+
+    ]
+}
+
+
 
 #connect to on premise
 

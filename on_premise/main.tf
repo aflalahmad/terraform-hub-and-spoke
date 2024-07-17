@@ -24,6 +24,15 @@ resource "azurerm_subnet" "onprem_vnetgateway_subnet" {
 
 }
 
+resource "azurerm_subnet" "subnets" {
+
+  name = "vm-subnet"
+  resource_group_name = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.onprem_vnets.name
+  address_prefixes = "10.20.2.0/24"
+  
+}
+
 resource "azurerm_public_ip" "onprem_vnetgateway_pip" {
    name = var.public_ip_name
    resource_group_name = azurerm_resource_group.rg.name
@@ -87,3 +96,96 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
      depends_on = [ azurerm_virtual_network_gateway.onprem_vnetgateway,azurerm_local_network_gateway.onprem_local_network_gateway ]
 }
+
+
+
+data "azurerm_key_vault" "kv" {
+    name = "mykeyvault09088"
+    resource_group_name = "spoke1RG"
+}
+data "azurerm_key_vault_secret" "vm_admin_username" {
+     name = "adminn-username1"
+     key_vault_id = data.azurerm_key_vault.kv.id
+}
+data "azurerm_key_vault_secret" "vm_admin_password" {
+     name = "adminn-npassword2"
+     key_vault_id = data.azurerm_key_vault.kv.id
+}
+
+
+#Network interface card
+resource "azurerm_network_interface" "nic" {
+    for_each = var.vms
+
+    name = each.value.nic_name
+    resource_group_name = azurerm_resource_group.rg.name
+    location = azurerm_resource_group.rg.location
+    ip_configuration {
+      name = "internal"
+      subnet_id = azurerm_subnet.subnets[each.value.subnet].id
+      private_ip_address_allocation = "Dynamic"
+    }
+  
+}
+
+#virtual machines
+resource "azurerm_virtual_machine" "vm" {
+
+    for_each = var.vms
+
+    name = each.value.vm_name
+    resource_group_name = azurerm_resource_group.rg.name
+    location = azurerm_resource_group.rg.location
+    network_interface_ids = [azurerm_network_interface.nic[each.key].id]
+    vm_size = each.value.vm_size
+     
+     storage_image_reference {
+       publisher = "MicrosoftWindowsServer"
+       offer = "WindowsServer"
+       sku = "2019-DataCenter"
+       version = "latest"
+     }
+      storage_os_disk {
+    name              = "myOsDisk-${each.key}"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+  }
+
+  os_profile {
+    computer_name  = each.value.host_name
+    admin_username = data.azurerm_key_vault_secret.vm_admin_username[each.key].value
+    admin_password = data.azurerm_key_vault_secret.vm_admin_password[each.key].value
+  }
+
+   os_profile_windows_config {
+    provision_vm_agent = true
+  }
+
+  storage_data_disk {
+    name              = each.value.disk_name
+    lun               = 0
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    disk_size_gb      = each.value.data_disk_size_gb
+    managed_disk_type = "Standard_LRS"
+  }
+  
+}
+
+resource "azurerm_route_table" "spoke1-udr" {
+
+  name = "onprem-udr-to-spoke"
+  location = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  route {
+    name = "route-to-firewall"
+    address_prefix = "10.30.0.0/16"
+    next_hop_type = "VirtualAppliance"
+    next_hop_in_ip_address = "10.10.3.4"
+  
+  }
+  
+}
+

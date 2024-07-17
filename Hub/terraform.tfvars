@@ -29,7 +29,7 @@ subnet_details = {
           delegations     = []
 
   },
-  hub_integration= {
+/*  hub_integration= {
     subnet_name = "hub_integration"
     address_prefixes = "10.10.2.0/24"
      delegations     = [{
@@ -37,7 +37,7 @@ subnet_details = {
         service_delegation = "Microsoft.Web/serverFarms"
         actions           = ["Microsoft.Network/virtualNetworks/subnets/action", "Microsoft.Network/virtualNetworks/subnets/join/action"]
       }]
-  },
+  },*/
   AzureBastionSubnet = {
     subnet_name = "AzureBastionSubnet"
     address_prefixes = "10.10.5.0/24"

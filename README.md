@@ -1,5 +1,5 @@
 # terraform-project1
-![hub and spoke 2](https://github.com/aflalahmad/terraform-project1/assets/105841418/f0b27181-84cc-4466-823d-02dd99b7edee)
+![project arch](https://github.com/user-attachments/assets/67d3fa69-fdd0-4671-beb6-053fc791a5eb)
 
 
 

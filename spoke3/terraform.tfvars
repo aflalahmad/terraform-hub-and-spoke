@@ -4,3 +4,4 @@ rg = {
 }
 appserviceplan_name = "myserviceplan"
 appservice_name = "myappservice7789"
+vnet_name = "spoke3_vnet"
