@@ -81,6 +81,7 @@ resource "azurerm_network_interface" "nic" {
     }
   
 }
+/*
 #Availability set for Virtual machine
 resource "azurerm_availability_set" "availability_set" {
   name                = "my-availability-set"
@@ -90,7 +91,7 @@ resource "azurerm_availability_set" "availability_set" {
   platform_fault_domain_count = 3
   platform_update_domain_count = 5
 }
-
+*/
 #virtual machines
 resource "azurerm_virtual_machine" "vm" {
 
@@ -102,7 +103,7 @@ resource "azurerm_virtual_machine" "vm" {
     network_interface_ids = [azurerm_network_interface.nic[each.key].id]
     vm_size = each.value.vm_size
      
-     availability_set_id = azurerm_availability_set.availability_set.id
+
      storage_image_reference {
        publisher = "MicrosoftWindowsServer"
        offer = "WindowsServer"
@@ -118,8 +119,8 @@ resource "azurerm_virtual_machine" "vm" {
 
   os_profile {
     computer_name  = each.value.host_name
-    admin_username = azurerm_key_vault_secret.vm_admin_username[each.key].value
-    admin_password = azurerm_key_vault_secret.vm_admin_password[each.key].value
+    admin_username = azurerm_key_vault_secret.vm_admin_username
+    admin_password = azurerm_key_vault_secret.vm_admin_password
   }
 
    os_profile_windows_config {
@@ -245,7 +246,16 @@ resource "azurerm_key_vault" "kv" {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azuread_client_config.current.object_id
 
-    secret_permissions = [ "Get","Set", ]
+    secret_permissions = [
+    "Backup",
+    "Delete",
+    "Get",
+    "List",
+    "Purge",
+    "Recover",
+    "Restore",
+    "Set",
+  ]
   }
   
 }
@@ -254,7 +264,7 @@ resource "azurerm_key_vault_secret" "vm_admin_username" {
 
   for_each = var.vms
 
-  name = "adminn-username1"
+  name = "aflal-pusername"
   value = each.value.admin_username
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -264,13 +274,14 @@ resource "azurerm_key_vault_secret" "vm_admin_password" {
 
   for_each = var.vms
 
-  name = "adminn-npassword2"
+  name = "aflal-ppassword"
   value = each.value.admin_password
   key_vault_id = azurerm_key_vault.kv.id
   
 }
 
-#route table for communicate between spoke1 n=and spoke2 through firewall
+
+#route table for communicate between spoke1 and spoke2 through firewall
 resource "azurerm_route_table" "spoke1-udr" {
 
   name = "spoke1-udr-to-firewall"
@@ -294,6 +305,9 @@ resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association"
     route_table_id = azurerm_route_table.spoke1-udr.id
 }
 
+
+
+/*
 # Log Analytics Workspace
 resource "azurerm_log_analytics_workspace" "log_analytics" {
   name                = var.log_analytics_workspace_name
@@ -382,7 +396,7 @@ resource "azurerm_monitor_diagnostic_setting" "vnet_diagnostics" {
   }
 }
 
-/*
+
 # Enable Diagnostics Logs via Azure Policy
 resource "azurerm_policy_definition" "diagnostics_policy" {
   name         = "mypolicy"

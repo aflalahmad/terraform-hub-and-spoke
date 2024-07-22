@@ -29,6 +29,30 @@ resource "azurerm_app_service" "app_service" {
 
   
 }
+
+resource "azurerm_virtual_network" "spoke3vnet" {
+
+  name = var.vnet_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  address_space = "10.100.0.0/16"
+  
+}
+
+resource "azurerm_subnet" "subnets" {
+  
+  name = "spoke3-subnet"
+  resource_group_name = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.spoke3vnet.name
+  address_prefixes = "10.100.1.0/24"
+}
+
+#intergrate to hub
+resource "azurerm_app_service_virtual_network_swift_connection" "vnet_integration" {
+  app_service_id = azurerm_app_service.app_service.id
+  subnet_id = azurerm_subnet.subnets.id
+  depends_on = [ azurerm_app_service.app_service,azurerm_subnet.subnets]
+}
 ```
 
 <!-- markdownlint-disable MD033 -->
@@ -52,7 +76,10 @@ The following resources are used by this module:
 
 - [azurerm_app_service.app_service](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/app_service) (resource)
 - [azurerm_app_service_plan.appservice_plan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/app_service_plan) (resource)
+- [azurerm_app_service_virtual_network_swift_connection.vnet_integration](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/app_service_virtual_network_swift_connection) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
+- [azurerm_virtual_network.spoke3vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -83,6 +110,12 @@ object({
     location       = string
   })
 ```
+
+### <a name="input_vnet_name"></a> [vnet\_name](#input\_vnet\_name)
+
+Description: Name of the virtual network.
+
+Type: `string`
 
 ## Optional Inputs
 

@@ -29,7 +29,7 @@ resource "azurerm_subnet" "subnets" {
   name = "vm-subnet"
   resource_group_name = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.onprem_vnets.name
-  address_prefixes = "10.20.2.0/24"
+  address_prefixes = ["10.20.2.0/24"]
   
 }
 
@@ -100,15 +100,15 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
 
 data "azurerm_key_vault" "kv" {
-    name = "mykeyvault09088"
+    name = "Aflalkeyvault7766"
     resource_group_name = "spoke1RG"
 }
 data "azurerm_key_vault_secret" "vm_admin_username" {
-     name = "adminn-username1"
+     name = "aflal-pusername"
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 data "azurerm_key_vault_secret" "vm_admin_password" {
-     name = "adminn-npassword2"
+     name = "aflal-ppassword"
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 
@@ -122,7 +122,7 @@ resource "azurerm_network_interface" "nic" {
     location = azurerm_resource_group.rg.location
     ip_configuration {
       name = "internal"
-      subnet_id = azurerm_subnet.subnets[each.value.subnet].id
+      subnet_id = azurerm_subnet.subnets.id
       private_ip_address_allocation = "Dynamic"
     }
   
@@ -151,25 +151,18 @@ resource "azurerm_virtual_machine" "vm" {
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
   }
-
+    
   os_profile {
     computer_name  = each.value.host_name
-    admin_username = data.azurerm_key_vault_secret.vm_admin_username[each.key].value
-    admin_password = data.azurerm_key_vault_secret.vm_admin_password[each.key].value
+    admin_username = data.azurerm_key_vault_secret.vm_admin_username
+    admin_password = data.azurerm_key_vault_secret.vm_admin_password
   }
 
    os_profile_windows_config {
     provision_vm_agent = true
   }
 
-  storage_data_disk {
-    name              = each.value.disk_name
-    lun               = 0
-    caching           = "ReadWrite"
-    create_option     = "Empty"
-    disk_size_gb      = each.value.data_disk_size_gb
-    managed_disk_type = "Standard_LRS"
-  }
+  
   
 }
 

@@ -50,7 +50,7 @@ vms = {
     }
 }
 
-keyvault_name = "mykeyvault09088"
+keyvault_name = "Aflalkeyvault7766"
 rsv_name = "spoke1rescoveryservicevault"
 backuppolicy_name = "spoke1backuppolicy"
 log_analytics_workspace_name = "log-analytics-workspace"

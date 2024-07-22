@@ -92,3 +92,8 @@ variable "log_analytics_workspace_name" {
   type        = string
   description = "Name of the Log Analytics workspace."
 }
+
+variable "vm1" {
+  type = string
+  
+}

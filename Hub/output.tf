@@ -1,3 +1,4 @@
+
 output "resource_group_id" {
   description = "The ID of the Azure resource group."
   value = azurerm_resource_group.rg.id
@@ -39,10 +40,7 @@ output "firewall_id" {
   value = azurerm_firewall.firewall.id
 }
 
-output "app_service_vnet_integration_id" {
-  description = "The ID of the virtual network integration for the App Service."
-  value = azurerm_app_service_virtual_network_swift_connection.vnet_integration.id
-}
+
 
 output "local_network_gateway_id" {
   description = "The ID of the local network gateway for on-premises connections."

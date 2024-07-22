@@ -115,13 +115,36 @@ resource "azurerm_firewall" "firewall" {
 }
 
 #firewall policy
-resource "azurerm_firewall_policy" "application-policy" {
-  name                = "firewall-application-policy"
+resource "azurerm_firewall_policy" "policy" {
+  name                = "firewall-policy"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
 
   base_policy_id      = null
+  
 }
+
+resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
+
+  name = "firewall-network-rule"
+  firewall_policy_id = azurerm_firewall_policy.policy.id
+  priority = 100
+ network_rule_collection {
+    name     = "AllowICMP_Rules"
+    priority = 100
+     action       = "Deny"
+
+    rule {
+      name         = "AllowICMP"
+      protocols = "ICMP"
+      destination_ports = "80"
+      source_addresses = "10.20.0.0/16"  
+      destination_addresses = "10.30.0.0/16"
+    }
+  }
+}
+
+
 
 data "azurerm_virtual_network" "spoke1vnet" {
   name = "spoke1VNet"
@@ -220,20 +243,56 @@ resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
     ]
 }
 
+#spoke3 to hub peering
 
-#virtual network integration with spoke3
-
-data "azurerm_app_service" "app_service" {
-  name = "myappservice7789"
+data "azurerm_virtual_network" "spoke3vnet" {
+  name = "spoke3_vnet"
   resource_group_name = "spoke3RG"
+  
   
 }
 
-resource "azurerm_app_service_virtual_network_swift_connection" "vnet_integration" {
-  app_service_id = data.azurerm_app_service.app_service.id
-  subnet_id = azurerm_subnet.subnet["hub_integration"].id
-  depends_on = [ data.azurerm_app_service.app_service,azurerm_subnet.subnet]
+
+resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
+    for_each = var.vnet_peerings
+
+    name                     = "spoke3-to-hub-peering-${each.key}"  
+    virtual_network_name     = data.azurerm_virtual_network.spoke3vnet.name
+    remote_virtual_network_id = azurerm_virtual_network.hubvnets.id
+
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
+
+    resource_group_name = data.azurerm_virtual_network.spoke3vnet.resource_group_name
+
+    depends_on = [
+        data.azurerm_virtual_network.spoke3vnet,
+        azurerm_virtual_network.hubvnets
+    ]
 }
+
+resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
+    for_each = var.vnet_peerings
+
+    name                     = "hub-to-spoke3-peering-${each.key}" 
+    virtual_network_name     = azurerm_virtual_network.hubvnets.name
+    remote_virtual_network_id = data.azurerm_virtual_network.spoke3vnet.id
+
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
+
+    resource_group_name = azurerm_resource_group.rg.name
+
+    depends_on = [
+        data.azurerm_virtual_network.spoke3vnet,
+        azurerm_virtual_network.hubvnets
+
+    ]
+}
+
+
 
 #connect to on premise
 
@@ -358,10 +417,10 @@ The following providers are used by this module:
 
 The following resources are used by this module:
 
-- [azurerm_app_service_virtual_network_swift_connection.vnet_integration](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/app_service_virtual_network_swift_connection) (resource)
 - [azurerm_bastion_host.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/bastion_host) (resource)
 - [azurerm_firewall.firewall](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
-- [azurerm_firewall_policy.application-policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy) (resource)
+- [azurerm_firewall_policy.policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy) (resource)
+- [azurerm_firewall_policy_rule_collection_group.icmp_rule](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy_rule_collection_group) (resource)
 - [azurerm_local_network_gateway.hub_local_network_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/local_network_gateway) (resource)
 - [azurerm_public_ip.publi_ips](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
@@ -373,11 +432,11 @@ The following resources are used by this module:
 - [azurerm_virtual_network_peering.hub_to_spoke2](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_virtual_network_peering.spoke1_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_virtual_network_peering.spoke2_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
-- [azurerm_app_service.app_service](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/app_service) (data source)
 - [azurerm_public_ip.onprem_publicip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/public_ip) (data source)
 - [azurerm_virtual_network.onprem_vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 - [azurerm_virtual_network.spoke1vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 - [azurerm_virtual_network.spoke2vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
+- [azurerm_virtual_network.spoke3vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs

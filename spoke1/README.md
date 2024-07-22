@@ -260,7 +260,7 @@ resource "azurerm_key_vault_secret" "vm_admin_username" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-adminn-username1"
+  name = "adminn-username1"
   value = each.value.admin_username
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -270,7 +270,7 @@ resource "azurerm_key_vault_secret" "vm_admin_password" {
 
   for_each = var.vms
 
-  name = "${each.value.vm_name}-adminn-npassword2"
+  name = "adminn-npassword2"
   value = each.value.admin_password
   key_vault_id = azurerm_key_vault.kv.id
   
@@ -288,6 +288,7 @@ resource "azurerm_route_table" "spoke1-udr" {
     address_prefix = "10.0.0.0/25"
     next_hop_type = "VirtualAppliance"
     next_hop_in_ip_address = "10.10.3.4"
+  
   }
   
 }

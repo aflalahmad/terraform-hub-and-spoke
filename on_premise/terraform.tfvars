@@ -23,6 +23,7 @@ vms = {
         admin_username = "spoke1"
         admin_password = "P@ssword123456"
         data_disk_size_gb = 10
+        subnet = "vm-subnet"
         
     }
 }

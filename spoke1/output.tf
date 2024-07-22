@@ -35,10 +35,6 @@ output "network_interface_ids" {
   }
 }
 
-output "availability_set_id" {
-  description = "The ID of the availability set."
-  value = azurerm_availability_set.availability_set.id
-}
 
 output "virtual_machine_ids" {
   description = "Map of virtual machine names to their IDs."
@@ -66,14 +62,4 @@ output "storage_account_id" {
 output "key_vault_id" {
   description = "The ID of the Azure Key Vault."
   value = azurerm_key_vault.kv.id
-}
-
-output "log_analytics_workspace_id" {
-  description = "The ID of the Azure Log Analytics Workspace."
-  value = azurerm_log_analytics_workspace.log_analytics.id
-}
-
-output "network_watcher_id" {
-  description = "The ID of the Azure Network Watcher."
-  value = azurerm_network_watcher.network_watcher.id
 }

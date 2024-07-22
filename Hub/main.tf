@@ -15,6 +15,7 @@ resource "azurerm_virtual_network" "hubvnets" {
    
     depends_on = [ azurerm_resource_group.rg ]
 }
+
 #subnet for all
 resource "azurerm_subnet" "subnet" {
     for_each = var.subnet_details
@@ -104,7 +105,7 @@ resource "azurerm_firewall" "firewall" {
     subnet_id            = azurerm_subnet.subnet["AzureFirewallSubnet"].id
     public_ip_address_id = azurerm_public_ip.publi_ips["firewall-pip"].id
   }
-   firewall_policy_id = azurerm_firewall_policy.application-policy.id
+   firewall_policy_id = azurerm_firewall_policy.policy.id
    depends_on = [azurerm_subnet.subnet["AzureFirewallSubnet"]]
 }
 
@@ -117,6 +118,7 @@ resource "azurerm_firewall_policy" "policy" {
   base_policy_id      = null
   
 }
+#firewall rule
 
 resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
 
@@ -130,13 +132,15 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
 
     rule {
       name         = "AllowICMP"
-      protocols = "ICMP"
-      destination_ports = "80"
-      source_addresses = "10.20.0.0/16"  
-      destination_addresses = "10.30.0.0/16"
+      protocols = ["ICMP"]
+      destination_ports = ["80"]
+      source_addresses = ["10.20.0.0/16"]  
+      destination_addresses = ["10.30.0.0/16"]
     }
   }
 }
+
+
 
 
 
@@ -325,30 +329,6 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
      depends_on = [ azurerm_virtual_network_gateway.vnetgateway,azurerm_local_network_gateway.hub_local_network_gateway ]
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
