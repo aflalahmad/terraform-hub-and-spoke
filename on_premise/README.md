@@ -2,6 +2,8 @@
 # Onpremise resource group
 
 This resource groups including virtual networks (VNets) with subnets and network security groups (NSGs) adn virtual network gateway,vpn connection and virtual network integration etc.. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
+# Diagram
+![Screenshot 2024-07-23 102131](https://github.com/user-attachments/assets/b257736a-0d7e-4af4-b70c-fa8add008d65)
 
 ```hcl
 resource "azurerm_resource_group" "rg" {
@@ -20,22 +22,16 @@ resource "azurerm_virtual_network" "onprem_vnets" {
     depends_on = [ azurerm_resource_group.rg ]
 }
 
-resource "azurerm_subnet" "onprem_vnetgateway_subnet" {
-    for_each = var.subnet_details
 
+resource "azurerm_subnet" "subnets" {
+
+   for_each = var.subnet_details
     name = each.value.subnet_name
     address_prefixes = [each.value.address_prefixes]
     resource_group_name = azurerm_resource_group.rg.name
     virtual_network_name = azurerm_virtual_network.onprem_vnets.name
-
-}
-
-resource "azurerm_subnet" "subnets" {
-
-  name = "vm-subnet"
-  resource_group_name = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.onprem_vnets.name
-  address_prefixes = "10.20.2.0/24"
+  
+    depends_on = [ azurerm_virtual_network.onprem_vnets]
   
 }
 
@@ -106,15 +102,15 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
 
 data "azurerm_key_vault" "kv" {
-    name = "mykeyvault09088"
+    name = "Aflalkeyvault7766"
     resource_group_name = "spoke1RG"
 }
 data "azurerm_key_vault_secret" "vm_admin_username" {
-     name = "adminn-username1"
+     name = "aflal-pusername"
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 data "azurerm_key_vault_secret" "vm_admin_password" {
-     name = "adminn-npassword2"
+     name = "aflal-ppassword"
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 
@@ -128,7 +124,7 @@ resource "azurerm_network_interface" "nic" {
     location = azurerm_resource_group.rg.location
     ip_configuration {
       name = "internal"
-      subnet_id = azurerm_subnet.subnets[each.value.subnet].id
+      subnet_id = azurerm_subnet.subnets["vm_subnet"].id
       private_ip_address_allocation = "Dynamic"
     }
   
@@ -157,18 +153,18 @@ resource "azurerm_virtual_machine" "vm" {
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
   }
-
+    
   os_profile {
     computer_name  = each.value.host_name
-    admin_username = data.azurerm_key_vault_secret.vm_admin_username[each.key].value
-    admin_password = data.azurerm_key_vault_secret.vm_admin_password[each.key].value
+    admin_username = data.azurerm_key_vault_secret.vm_admin_username.value
+    admin_password = data.azurerm_key_vault_secret.vm_admin_password.value
   }
 
    os_profile_windows_config {
     provision_vm_agent = true
   }
 
-  storage_data_disk {
+   storage_data_disk {
     name              = each.value.disk_name
     lun               = 0
     caching           = "ReadWrite"
@@ -179,6 +175,7 @@ resource "azurerm_virtual_machine" "vm" {
   
 }
 
+#create a route table
 resource "azurerm_route_table" "spoke1-udr" {
 
   name = "onprem-udr-to-spoke"
@@ -188,13 +185,18 @@ resource "azurerm_route_table" "spoke1-udr" {
   route {
     name = "route-to-firewall"
     address_prefix = "10.30.0.0/16"
-    next_hop_type = "VirtualAppliance"
-    next_hop_in_ip_address = "10.10.3.4"
+    next_hop_type = "VirtualNetworkGateway"
   
   }
   
 }
 
+# Associate the route table with their subnet
+resource "azurerm_subnet_route_table_association" "routetable--ass" {
+   subnet_id                 = azurerm_subnet.subnets["vm_subnet"].id
+   route_table_id = azurerm_route_table.spoke1-udr.id
+   depends_on = [ azurerm_subnet.subnets , azurerm_route_table.spoke1-udr ]
+}
 ```
 
 <!-- markdownlint-disable MD033 -->
@@ -221,8 +223,8 @@ The following resources are used by this module:
 - [azurerm_public_ip.onprem_vnetgateway_pip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_route_table.spoke1-udr](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
-- [azurerm_subnet.onprem_vnetgateway_subnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
+- [azurerm_subnet_route_table_association.routetable--ass](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
 - [azurerm_virtual_machine.vm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine) (resource)
 - [azurerm_virtual_network.onprem_vnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azurerm_virtual_network_gateway.onprem_vnetgateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway) (resource)

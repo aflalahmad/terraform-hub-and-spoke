@@ -2,6 +2,9 @@
 # Spoke2 Resource Group
 
 This Resource Group  including virtual networks (VNets) with subnets and network security groups (NSGs) and virtual machine scale set. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
+# Diagram
+
+![Screenshot 2024-07-23 102202](https://github.com/user-attachments/assets/418e3838-b115-410f-ad80-5fca878ec5ad)
 
 ```hcl
 resource "azurerm_resource_group" "rg" {
@@ -58,6 +61,85 @@ resource "azurerm_subnet_network_security_group_association" "nsg-association" {
       network_security_group_id = azurerm_network_security_group.nsg[each.key].id
       depends_on = [ azurerm_network_security_group.nsg,azurerm_subnet.subnets ]
 }
+
+# Create the Public IP for Application Gateway
+resource "azurerm_public_ip" "public_ip" {
+  name                = "AppGateway-pip"
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
+# Create the Application for their dedicated subnet
+resource "azurerm_application_gateway" "appGW" {
+  name                = "App-Gateway"
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  sku {
+    name     = "Standard_v2"
+    tier     = "Standard_v2"
+    capacity = 2
+  }
+
+  gateway_ip_configuration {
+    name      = "appgw-ip-config"
+    subnet_id = azurerm_subnet.subnets["AppGw-subnet"].id
+  }
+
+  frontend_ip_configuration {
+    name                 = "appgw-frontend-ip"
+    public_ip_address_id = azurerm_public_ip.public_ip.id
+  }
+
+  frontend_port {
+    name = "frontend-port"
+    port = 80
+  }
+
+  backend_address_pool {
+    name = "appgw-backend-pool"
+  }
+
+  backend_http_settings {
+    name                  = "appgw-backend-http-settings"
+    cookie_based_affinity = "Disabled"
+    port                  = 80
+    protocol              = "Http"
+    request_timeout       = 20
+  }
+
+  http_listener {
+    name                           = "appgw-http-listener"
+    frontend_ip_configuration_name = "appgw-frontend-ip"
+    frontend_port_name             = "frontend-port"
+    protocol                       = "Http"
+  }
+
+  request_routing_rule {
+    name                       = "appgw-routing-rule"
+    rule_type                  = "Basic"
+    http_listener_name         = "appgw-http-listener"
+    backend_address_pool_name  = "appgw-backend-pool"
+    backend_http_settings_name = "appgw-backend-http-settings"
+  }
+    depends_on = [azurerm_resource_group.rg ,azurerm_subnet.subnets ,azurerm_public_ip.public_ip]
+ }
+
+data "azurerm_key_vault" "kv" {
+    name = "Aflalkeyvault7766"
+    resource_group_name = "spoke1RG"
+}
+data "azurerm_key_vault_secret" "vm_admin_username" {
+     name = "aflal-pusername"
+     key_vault_id = data.azurerm_key_vault.kv.id
+}
+data "azurerm_key_vault_secret" "vm_admin_password" {
+     name = "aflal-ppassword"
+     key_vault_id = data.azurerm_key_vault.kv.id
+}
+
+
 #Virtual machine scale set
 resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
   name                 = var.vmss_name
@@ -65,8 +147,8 @@ resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
   location             = azurerm_resource_group.rg.location
   sku                  = var.sku
   instances            = var.instance
-  admin_password       = var.admin_password
-  admin_username       = var.admin_username
+  admin_password       = data.azurerm_key_vault_secret.vm_admin_password.value
+  admin_username       = data.azurerm_key_vault_secret.vm_admin_username.value
   computer_name_prefix = "vm-"
 
   source_image_reference {
@@ -186,7 +268,7 @@ resource "azurerm_resource_group_policy_assignment" "example" {
 
 */
 #route table for communicate between spoke2 t0 spoke1 through firewall
-
+/*
 resource "azurerm_route_table" "spoke2-udr" {
 
   name = "spoke2-udr-to-firewall"
@@ -208,6 +290,7 @@ resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association"
     subnet_id = azurerm_subnet.subnets[each.key].id
     route_table_id = azurerm_route_table.spoke2-udr.id
 }
+*/
 ```
 
 <!-- markdownlint-disable MD033 -->
@@ -229,14 +312,17 @@ The following providers are used by this module:
 
 The following resources are used by this module:
 
+- [azurerm_application_gateway.appGW](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/application_gateway) (resource)
 - [azurerm_network_security_group.nsg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_group) (resource)
+- [azurerm_public_ip.public_ip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
-- [azurerm_route_table.spoke2-udr](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
 - [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_network_security_group_association.nsg-association](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_network_security_group_association) (resource)
-- [azurerm_subnet_route_table_association.spoke1udr_subnet_association](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
 - [azurerm_virtual_network.vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azurerm_windows_virtual_machine_scale_set.vmss](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/windows_virtual_machine_scale_set) (resource)
+- [azurerm_key_vault.kv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault) (data source)
+- [azurerm_key_vault_secret.vm_admin_password](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault_secret) (data source)
+- [azurerm_key_vault_secret.vm_admin_username](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault_secret) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs

@@ -3,6 +3,10 @@
 
 This Resource Group  including virtual networks (VNets) with subnets and network security groups (NSGs). The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
 
+# Diagram
+
+![Screenshot 2024-07-23 102152](https://github.com/user-attachments/assets/8ae150bf-6140-4d51-bf7c-df09f2be74f9)
+
 ```hcl
 
 data "azurerm_client_config" "current" {}
@@ -87,6 +91,7 @@ resource "azurerm_network_interface" "nic" {
     }
   
 }
+/*
 #Availability set for Virtual machine
 resource "azurerm_availability_set" "availability_set" {
   name                = "my-availability-set"
@@ -96,7 +101,7 @@ resource "azurerm_availability_set" "availability_set" {
   platform_fault_domain_count = 3
   platform_update_domain_count = 5
 }
-
+*/
 #virtual machines
 resource "azurerm_virtual_machine" "vm" {
 
@@ -108,7 +113,7 @@ resource "azurerm_virtual_machine" "vm" {
     network_interface_ids = [azurerm_network_interface.nic[each.key].id]
     vm_size = each.value.vm_size
      
-     availability_set_id = azurerm_availability_set.availability_set.id
+
      storage_image_reference {
        publisher = "MicrosoftWindowsServer"
        offer = "WindowsServer"
@@ -124,8 +129,8 @@ resource "azurerm_virtual_machine" "vm" {
 
   os_profile {
     computer_name  = each.value.host_name
-    admin_username = azurerm_key_vault_secret.vm_admin_username[each.key].value
-    admin_password = azurerm_key_vault_secret.vm_admin_password[each.key].value
+    admin_username = azurerm_key_vault_secret.vm_admin_username
+    admin_password = azurerm_key_vault_secret.vm_admin_password
   }
 
    os_profile_windows_config {
@@ -195,6 +200,56 @@ resource "azurerm_backup_protected_vm" "backup_protected" {
     source_vm_id = each.value.id
     backup_policy_id = azurerm_backup_policy_vm.backup_policy.id
 }
+
+
+
+#key vault for storing username and password
+resource "azurerm_key_vault" "kv" {
+
+  name = var.keyvault_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  sku_name = "standard"
+
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azuread_client_config.current.object_id
+
+    secret_permissions = [
+    "Backup",
+    "Delete",
+    "Get",
+    "List",
+    "Purge",
+    "Recover",
+    "Restore",
+    "Set",
+  ]
+  }
+  
+}
+
+resource "azurerm_key_vault_secret" "vm_admin_username" {
+
+  for_each = var.vms
+
+  name = "aflal-pusername"
+  value = each.value.admin_username
+  key_vault_id = azurerm_key_vault.kv.id
+  
+}
+
+resource "azurerm_key_vault_secret" "vm_admin_password" {
+
+  for_each = var.vms
+
+  name = "aflal-ppassword"
+  value = each.value.admin_password
+  key_vault_id = azurerm_key_vault.kv.id
+  
+}
+#storage account
 resource "azurerm_storage_account" "stgacc" {
     
   name = "msystorageaccount"
@@ -207,6 +262,7 @@ resource "azurerm_storage_account" "stgacc" {
     environment = "production"
   }
 }
+
 /*
 resource "azurerm_storage_share" "fileshare" {
 
@@ -237,46 +293,8 @@ resource "azurerm_virtual_machine_extension" "file-share-mount" {
 }
 
 */
-
-#key vault for storing username and password
-resource "azurerm_key_vault" "kv" {
-
-  name = var.keyvault_name
-  resource_group_name = azurerm_resource_group.rg.name
-  location = azurerm_resource_group.rg.location
-  tenant_id = data.azurerm_client_config.current.tenant_id
-  sku_name = "standard"
-
-  access_policy {
-    tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = data.azuread_client_config.current.object_id
-
-    secret_permissions = [ "Get","Set", ]
-  }
-  
-}
-
-resource "azurerm_key_vault_secret" "vm_admin_username" {
-
-  for_each = var.vms
-
-  name = "adminn-username1"
-  value = each.value.admin_username
-  key_vault_id = azurerm_key_vault.kv.id
-  
-}
-
-resource "azurerm_key_vault_secret" "vm_admin_password" {
-
-  for_each = var.vms
-
-  name = "adminn-npassword2"
-  value = each.value.admin_password
-  key_vault_id = azurerm_key_vault.kv.id
-  
-}
-
-#route table for communicate between spoke1 n=and spoke2 through firewall
+/*
+#route table for communicate between spoke1 and spoke2 through firewall
 resource "azurerm_route_table" "spoke1-udr" {
 
   name = "spoke1-udr-to-firewall"
@@ -300,6 +318,9 @@ resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association"
     route_table_id = azurerm_route_table.spoke1-udr.id
 }
 
+*/
+
+/*
 # Log Analytics Workspace
 resource "azurerm_log_analytics_workspace" "log_analytics" {
   name                = var.log_analytics_workspace_name
@@ -388,7 +409,7 @@ resource "azurerm_monitor_diagnostic_setting" "vnet_diagnostics" {
   }
 }
 
-/*
+
 # Enable Diagnostics Logs via Azure Policy
 resource "azurerm_policy_definition" "diagnostics_policy" {
   name         = "mypolicy"
@@ -540,25 +561,18 @@ The following providers are used by this module:
 
 The following resources are used by this module:
 
-- [azurerm_availability_set.availability_set](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/availability_set) (resource)
 - [azurerm_backup_policy_vm.backup_policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/backup_policy_vm) (resource)
 - [azurerm_backup_protected_vm.backup_protected](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/backup_protected_vm) (resource)
 - [azurerm_key_vault.kv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault) (resource)
 - [azurerm_key_vault_secret.vm_admin_password](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
 - [azurerm_key_vault_secret.vm_admin_username](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
-- [azurerm_log_analytics_workspace.log_analytics](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_workspace) (resource)
-- [azurerm_monitor_diagnostic_setting.vnet_diagnostics](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting) (resource)
 - [azurerm_network_interface.nic](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface) (resource)
 - [azurerm_network_security_group.nsg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_group) (resource)
-- [azurerm_network_watcher.network_watcher](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_watcher) (resource)
-- [azurerm_network_watcher_flow_log.nsg_flow_log](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_watcher_flow_log) (resource)
 - [azurerm_recovery_services_vault.rsv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/recovery_services_vault) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
-- [azurerm_route_table.spoke1-udr](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
 - [azurerm_storage_account.stgacc](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) (resource)
 - [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_network_security_group_association.nsg-association](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_network_security_group_association) (resource)
-- [azurerm_subnet_route_table_association.spoke1udr_subnet_association](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
 - [azurerm_virtual_machine.vm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine) (resource)
 - [azurerm_virtual_network.vnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azuread_client_config.current](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/data-sources/client_config) (data source)
@@ -620,6 +634,12 @@ map(object({
   }))
 ```
 
+### <a name="input_vm1"></a> [vm1](#input\_vm1)
+
+Description: n/a
+
+Type: `string`
+
 ### <a name="input_vms"></a> [vms](#input\_vms)
 
 Description: Map of virtual machine configurations.
@@ -676,10 +696,6 @@ Default: `"rules-20.csv"`
 
 The following outputs are exported:
 
-### <a name="output_availability_set_id"></a> [availability\_set\_id](#output\_availability\_set\_id)
-
-Description: The ID of the availability set.
-
 ### <a name="output_backup_policy_id"></a> [backup\_policy\_id](#output\_backup\_policy\_id)
 
 Description: The ID of the backup policy.
@@ -688,10 +704,6 @@ Description: The ID of the backup policy.
 
 Description: The ID of the Azure Key Vault.
 
-### <a name="output_log_analytics_workspace_id"></a> [log\_analytics\_workspace\_id](#output\_log\_analytics\_workspace\_id)
-
-Description: The ID of the Azure Log Analytics Workspace.
-
 ### <a name="output_network_interface_ids"></a> [network\_interface\_ids](#output\_network\_interface\_ids)
 
 Description: Map of network interface names to their IDs.
@@ -699,10 +711,6 @@ Description: Map of network interface names to their IDs.
 ### <a name="output_network_security_group_ids"></a> [network\_security\_group\_ids](#output\_network\_security\_group\_ids)
 
 Description: Map of network security group names to their IDs.
-
-### <a name="output_network_watcher_id"></a> [network\_watcher\_id](#output\_network\_watcher\_id)
-
-Description: The ID of the Azure Network Watcher.
 
 ### <a name="output_recovery_services_vault_id"></a> [recovery\_services\_vault\_id](#output\_recovery\_services\_vault\_id)
 
