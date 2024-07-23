@@ -366,16 +366,12 @@ resource "azurerm_route_table" "route_table" {
   resource_group_name = azurerm_resource_group.rg.name
   location = azurerm_resource_group.rg.location
   depends_on = [ azurerm_resource_group.rg,azurerm_subnet.subnet ]
-}
-
-resource "azurerm_route" "route-to-spoke1" {
+  route {
   name = "To-spoke1"
-  resource_group_name = azurerm_resource_group.rg.name
-  route_table_name = azurerm_route_table.route_table.name
   next_hop_type = "VirtualAppliance"
   address_prefix = "10.30.0.0/16"
   next_hop_in_ip_address = "10.10.3.4"
-  depends_on = [ azurerm_route_table.route_table ]
+}
 }
 resource "azurerm_subnet_route_table_association" "route-table-ass" {
    subnet_id                 = azurerm_subnet.subnets["GatewaySubnet"].id
