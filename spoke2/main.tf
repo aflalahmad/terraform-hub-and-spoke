@@ -52,6 +52,85 @@ resource "azurerm_subnet_network_security_group_association" "nsg-association" {
       network_security_group_id = azurerm_network_security_group.nsg[each.key].id
       depends_on = [ azurerm_network_security_group.nsg,azurerm_subnet.subnets ]
 }
+
+# Create the Public IP for Application Gateway
+resource "azurerm_public_ip" "public_ip" {
+  name                = "AppGateway-pip"
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
+# Create the Application for their dedicated subnet
+resource "azurerm_application_gateway" "appGW" {
+  name                = "App-Gateway"
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  sku {
+    name     = "Standard_v2"
+    tier     = "Standard_v2"
+    capacity = 2
+  }
+
+  gateway_ip_configuration {
+    name      = "appgw-ip-config"
+    subnet_id = azurerm_subnet.subnets["AppGw-subnet"].id
+  }
+
+  frontend_ip_configuration {
+    name                 = "appgw-frontend-ip"
+    public_ip_address_id = azurerm_public_ip.public_ip.id
+  }
+
+  frontend_port {
+    name = "frontend-port"
+    port = 80
+  }
+
+  backend_address_pool {
+    name = "appgw-backend-pool"
+  }
+
+  backend_http_settings {
+    name                  = "appgw-backend-http-settings"
+    cookie_based_affinity = "Disabled"
+    port                  = 80
+    protocol              = "Http"
+    request_timeout       = 20
+  }
+
+  http_listener {
+    name                           = "appgw-http-listener"
+    frontend_ip_configuration_name = "appgw-frontend-ip"
+    frontend_port_name             = "frontend-port"
+    protocol                       = "Http"
+  }
+
+  request_routing_rule {
+    name                       = "appgw-routing-rule"
+    rule_type                  = "Basic"
+    http_listener_name         = "appgw-http-listener"
+    backend_address_pool_name  = "appgw-backend-pool"
+    backend_http_settings_name = "appgw-backend-http-settings"
+  }
+    depends_on = [azurerm_resource_group.rg ,azurerm_subnet.subnets ,azurerm_public_ip.public_ip]
+ }
+
+data "azurerm_key_vault" "kv" {
+    name = "Aflalkeyvault7766"
+    resource_group_name = "spoke1RG"
+}
+data "azurerm_key_vault_secret" "vm_admin_username" {
+     name = "aflal-pusername"
+     key_vault_id = data.azurerm_key_vault.kv.id
+}
+data "azurerm_key_vault_secret" "vm_admin_password" {
+     name = "aflal-ppassword"
+     key_vault_id = data.azurerm_key_vault.kv.id
+}
+
+
 #Virtual machine scale set
 resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
   name                 = var.vmss_name
@@ -59,8 +138,8 @@ resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
   location             = azurerm_resource_group.rg.location
   sku                  = var.sku
   instances            = var.instance
-  admin_password       = var.admin_password
-  admin_username       = var.admin_username
+  admin_password       = data.azurerm_key_vault_secret.vm_admin_password.value
+  admin_username       = data.azurerm_key_vault_secret.vm_admin_username.value
   computer_name_prefix = "vm-"
 
   source_image_reference {
@@ -180,7 +259,7 @@ resource "azurerm_resource_group_policy_assignment" "example" {
 
 */
 #route table for communicate between spoke2 t0 spoke1 through firewall
-
+/*
 resource "azurerm_route_table" "spoke2-udr" {
 
   name = "spoke2-udr-to-firewall"
@@ -202,3 +281,4 @@ resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association"
     subnet_id = azurerm_subnet.subnets[each.key].id
     route_table_id = azurerm_route_table.spoke2-udr.id
 }
+*/

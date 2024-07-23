@@ -14,22 +14,16 @@ resource "azurerm_virtual_network" "onprem_vnets" {
     depends_on = [ azurerm_resource_group.rg ]
 }
 
-resource "azurerm_subnet" "onprem_vnetgateway_subnet" {
-    for_each = var.subnet_details
 
+resource "azurerm_subnet" "subnets" {
+
+   for_each = var.subnet_details
     name = each.value.subnet_name
     address_prefixes = [each.value.address_prefixes]
     resource_group_name = azurerm_resource_group.rg.name
     virtual_network_name = azurerm_virtual_network.onprem_vnets.name
-
-}
-
-resource "azurerm_subnet" "subnets" {
-
-  name = "vm-subnet"
-  resource_group_name = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.onprem_vnets.name
-  address_prefixes = ["10.20.2.0/24"]
+  
+    depends_on = [ azurerm_virtual_network.onprem_vnets]
   
 }
 
@@ -122,7 +116,7 @@ resource "azurerm_network_interface" "nic" {
     location = azurerm_resource_group.rg.location
     ip_configuration {
       name = "internal"
-      subnet_id = azurerm_subnet.subnets.id
+      subnet_id = azurerm_subnet.subnets["vm_subnet"].id
       private_ip_address_allocation = "Dynamic"
     }
   
@@ -154,18 +148,26 @@ resource "azurerm_virtual_machine" "vm" {
     
   os_profile {
     computer_name  = each.value.host_name
-    admin_username = data.azurerm_key_vault_secret.vm_admin_username
-    admin_password = data.azurerm_key_vault_secret.vm_admin_password
+    admin_username = data.azurerm_key_vault_secret.vm_admin_username.value
+    admin_password = data.azurerm_key_vault_secret.vm_admin_password.value
   }
 
    os_profile_windows_config {
     provision_vm_agent = true
   }
 
-  
+   storage_data_disk {
+    name              = each.value.disk_name
+    lun               = 0
+    caching           = "ReadWrite"
+    create_option     = "Empty"
+    disk_size_gb      = each.value.data_disk_size_gb
+    managed_disk_type = "Standard_LRS"
+  }
   
 }
 
+#create a route table
 resource "azurerm_route_table" "spoke1-udr" {
 
   name = "onprem-udr-to-spoke"
@@ -175,10 +177,15 @@ resource "azurerm_route_table" "spoke1-udr" {
   route {
     name = "route-to-firewall"
     address_prefix = "10.30.0.0/16"
-    next_hop_type = "VirtualAppliance"
-    next_hop_in_ip_address = "10.10.3.4"
+    next_hop_type = "VirtualNetworkGateway"
   
   }
   
 }
 
+# Associate the route table with their subnet
+resource "azurerm_subnet_route_table_association" "routetable--ass" {
+   subnet_id                 = azurerm_subnet.subnets["vm_subnet"].id
+   route_table_id = azurerm_route_table.spoke1-udr.id
+   depends_on = [ azurerm_subnet.subnets , azurerm_route_table.spoke1-udr ]
+}

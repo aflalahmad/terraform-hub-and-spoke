@@ -190,48 +190,8 @@ resource "azurerm_backup_protected_vm" "backup_protected" {
     source_vm_id = each.value.id
     backup_policy_id = azurerm_backup_policy_vm.backup_policy.id
 }
-resource "azurerm_storage_account" "stgacc" {
-    
-  name = "msystorageaccount"
-  resource_group_name = azurerm_resource_group.rg.name
-  location = azurerm_resource_group.rg.location
-  account_tier = "Standard"
-  account_replication_type = "LRS"
-  
-  tags = {
-    environment = "production"
-  }
-}
-/*
-resource "azurerm_storage_share" "fileshare" {
 
-  name = "myfilshare"
-  storage_account_name = azurerm_storage_account.stgacc.name
-  quota = 100
-  
 
-}
-resource "azurerm_virtual_machine_extension" "file-share-mount" {
-  for_each = var.vms
-  name = "myfilesharemount-${each.key}"
-  virtual_machine_id = azurerm_virtual_machine.vm[each.key].id
-  publisher = "Microsoft.Compute"
-  type = "CustomScriptExtension"
-  type_handler_version = "1.10"
-
-  settings = jsonencode({
-    "commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -File ${path.module}/mount-fileshare.ps1 -storageAccountName ${azurerm_storage_account.stgacc.name} -storageAccountKey ${azurerm_storage_account.stgacc.primary_access_key} -fileShareName ${azurerm_storage_share.fileshare.name} -mountPoint 'Z:'"
-  })
-
-  protected_settings = jsonencode({
-    "storageAccountName" = azurerm_storage_account.stgacc.name
-    "storageAccountKey"  = azurerm_storage_account.stgacc.primary_access_key
-  })
-
-  depends_on = [azurerm_virtual_machine.vm]
-}
-
-*/
 
 #key vault for storing username and password
 resource "azurerm_key_vault" "kv" {
@@ -279,8 +239,51 @@ resource "azurerm_key_vault_secret" "vm_admin_password" {
   key_vault_id = azurerm_key_vault.kv.id
   
 }
+#storage account
+resource "azurerm_storage_account" "stgacc" {
+    
+  name = "msystorageaccount"
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  account_tier = "Standard"
+  account_replication_type = "LRS"
+  
+  tags = {
+    environment = "production"
+  }
+}
 
+/*
+resource "azurerm_storage_share" "fileshare" {
 
+  name = "myfilshare"
+  storage_account_name = azurerm_storage_account.stgacc.name
+  quota = 100
+  
+
+}
+resource "azurerm_virtual_machine_extension" "file-share-mount" {
+  for_each = var.vms
+  name = "myfilesharemount-${each.key}"
+  virtual_machine_id = azurerm_virtual_machine.vm[each.key].id
+  publisher = "Microsoft.Compute"
+  type = "CustomScriptExtension"
+  type_handler_version = "1.10"
+
+  settings = jsonencode({
+    "commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -File ${path.module}/mount-fileshare.ps1 -storageAccountName ${azurerm_storage_account.stgacc.name} -storageAccountKey ${azurerm_storage_account.stgacc.primary_access_key} -fileShareName ${azurerm_storage_share.fileshare.name} -mountPoint 'Z:'"
+  })
+
+  protected_settings = jsonencode({
+    "storageAccountName" = azurerm_storage_account.stgacc.name
+    "storageAccountKey"  = azurerm_storage_account.stgacc.primary_access_key
+  })
+
+  depends_on = [azurerm_virtual_machine.vm]
+}
+
+*/
+/*
 #route table for communicate between spoke1 and spoke2 through firewall
 resource "azurerm_route_table" "spoke1-udr" {
 
@@ -305,7 +308,7 @@ resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association"
     route_table_id = azurerm_route_table.spoke1-udr.id
 }
 
-
+*/
 
 /*
 # Log Analytics Workspace

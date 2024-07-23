@@ -47,3 +47,58 @@ resource "azurerm_app_service_virtual_network_swift_connection" "vnet_integratio
   subnet_id = azurerm_subnet.subnets.id
   depends_on = [ azurerm_app_service.app_service,azurerm_subnet.subnets]
 }
+
+/*
+#Recovery service vault for backup
+
+resource "azurerm_recovery_services_vault" "rsv" {
+
+  name = "rsv"
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  sku = "Standard"
+  
+}
+
+resource "azurerm_backup_policy_vm" "backup_policy" {
+  name                = "backup-policy"
+  resource_group_name = azurerm_resource_group.rg.name
+  recovery_vault_name = azurerm_recovery_services_vault.rsv.name
+
+  backup {
+    frequency = "Daily"
+    time      = "12:00"
+  }
+
+  retention_daily {
+    count = 30
+  }
+
+  retention_weekly {
+    count   = 5
+    weekdays = ["Monday"]
+  }
+
+  retention_monthly {
+    count   = 12
+    weekdays = ["Monday"]
+    weeks    = ["First"]
+  }
+
+  retention_yearly {
+    count   = 1
+    weekdays = ["Monday"]
+    months   = ["January"]
+    weeks    = ["First"]
+  }
+}
+
+resource "azurerm_backup_protected_vm" "backup_protected" {
+    for_each = azurerm_virtual_machine.vm
+    resource_group_name = azurerm_resource_group.rg.name
+    recovery_vault_name = azurerm_recovery_services_vault.rsv.name
+    source_vm_id = each.value.id
+    backup_policy_id = azurerm_backup_policy_vm.backup_policy.id
+}
+
+*/

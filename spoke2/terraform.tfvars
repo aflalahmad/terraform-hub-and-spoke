@@ -16,7 +16,11 @@ subnets = {
         name = "spoke2subnet2",
         vnet = "spoke2VNet"
         address_prefixes = "10.0.0.128/25"
-        
+     },
+     subnet 3 = {
+      name = "AppGw-subnet"
+      vnet = "spoke2VNet"
+      address_prefixes = "10.0.0.150/25"
      }
 }
 

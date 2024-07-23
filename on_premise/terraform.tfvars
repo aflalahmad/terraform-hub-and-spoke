@@ -8,6 +8,10 @@ subnet_details = {
  GatewaySubnet = {
     subnet_name = "GatewaySubnet"
     address_prefixes = "10.20.1.0/24"
+  },
+  vm_subnet = {
+    subnet_name = "vm_subnet"
+    address_prefix = "10.20.2.0/24"
   }
 }
 public_ip_name = "onprem_vnetgatway_publicip"
