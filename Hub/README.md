@@ -3,6 +3,9 @@
 
 This resource groups including virtual networks (VNets) with subnets and network security groups (NSGs) adn virtual network gateway,vpn connection and virtual network integration etc.. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
 
+# Diagram
+![Screenshot 2024-07-23 102105](https://github.com/user-attachments/assets/b0dee401-e906-4410-837b-f7a492b5c44c)
+
 ```hcl
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
@@ -21,6 +24,7 @@ resource "azurerm_virtual_network" "hubvnets" {
    
     depends_on = [ azurerm_resource_group.rg ]
 }
+
 #subnet for all
 resource "azurerm_subnet" "subnet" {
     for_each = var.subnet_details
@@ -110,7 +114,7 @@ resource "azurerm_firewall" "firewall" {
     subnet_id            = azurerm_subnet.subnet["AzureFirewallSubnet"].id
     public_ip_address_id = azurerm_public_ip.publi_ips["firewall-pip"].id
   }
-   firewall_policy_id = azurerm_firewall_policy.application-policy.id
+   firewall_policy_id = azurerm_firewall_policy.policy.id
    depends_on = [azurerm_subnet.subnet["AzureFirewallSubnet"]]
 }
 
@@ -119,16 +123,46 @@ resource "azurerm_firewall_policy" "policy" {
   name                = "firewall-policy"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-
+ sku = "Standard"
   base_policy_id      = null
   
 }
+
+# create the ip group
+resource "azurerm_ip_group" "ip_group" {
+  name = "Ip-group"
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  cidrs = [ "10.10.0.0/16","10.30.0.0/16","10.0.0.0/24" ]
+  depends_on = [ azurerm_resource_group.rg ]
+}
+
+
+#firewall rule
 
 resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
 
   name = "firewall-network-rule"
   firewall_policy_id = azurerm_firewall_policy.policy.id
   priority = 100
+
+  nat_rule_collection {          
+    name     = "DNat-rule-collection"
+    priority = 100
+    action   = "DNat"
+
+    rule {
+      name             = "Allow-RDP"
+      source_addresses = ["103.25.44.14"]   
+      destination_ports = ["3389"]
+      destination_address = azurerm_public_ip.public_ips["AzureFirewallSubnet"].ip_address
+      translated_address = "10.100.2.4"   
+      translated_port    = "3389"
+      protocols         = ["TCP"]
+    }
+  }
+ 
+
  network_rule_collection {
     name     = "AllowICMP_Rules"
     priority = 100
@@ -136,13 +170,15 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
 
     rule {
       name         = "AllowICMP"
-      protocols = "ICMP"
-      destination_ports = "80"
-      source_addresses = "10.20.0.0/16"  
-      destination_addresses = "10.30.0.0/16"
+      protocols = ["Any"]
+      destination_ports = ["*"]
+      source_addresses = ["10.20.0.0/16"]  
+      destination_addresses = ["10.30.0.0/16"]
     }
   }
 }
+
+
 
 
 
@@ -332,32 +368,29 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
      depends_on = [ azurerm_virtual_network_gateway.vnetgateway,azurerm_local_network_gateway.hub_local_network_gateway ]
 }
 
+#create the route table
 
+resource "azurerm_route_table" "route_table" {
+  name = "Hub-route-table"
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  depends_on = [ azurerm_resource_group.rg,azurerm_subnet.subnet ]
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+resource "azurerm_route" "route-to-spoke1" {
+  name = "To-spoke1"
+  resource_group_name = azurerm_resource_group.rg.name
+  route_table_name = azurerm_route_table.route_table.name
+  next_hop_type = "VirtualAppliance"
+  address_prefix = "10.30.0.0/16"
+  next_hop_in_ip_address = "10.10.3.4"
+  depends_on = [ azurerm_route_table.route_table ]
+}
+resource "azurerm_subnet_route_table_association" "route-table-ass" {
+   subnet_id                 = azurerm_subnet.subnets["GatewaySubnet"].id
+  route_table_id = azurerm_route_table.route_table.id
+  depends_on = [ azurerm_subnet.subnets , azurerm_route_table.route_table ]
+}
 /*
 resource "azurerm_monitor_diagnostic_setting" "diagnostic_setting" {
   for_each = {
@@ -421,10 +454,14 @@ The following resources are used by this module:
 - [azurerm_firewall.firewall](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
 - [azurerm_firewall_policy.policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy) (resource)
 - [azurerm_firewall_policy_rule_collection_group.icmp_rule](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy_rule_collection_group) (resource)
+- [azurerm_ip_group.ip_group](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/ip_group) (resource)
 - [azurerm_local_network_gateway.hub_local_network_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/local_network_gateway) (resource)
 - [azurerm_public_ip.publi_ips](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_route.route-to-spoke1](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route) (resource)
+- [azurerm_route_table.route_table](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
 - [azurerm_subnet.subnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
+- [azurerm_subnet_route_table_association.route-table-ass](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
 - [azurerm_virtual_network.hubvnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azurerm_virtual_network_gateway.vnetgateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway) (resource)
 - [azurerm_virtual_network_gateway_connection.onprem_vpn_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway_connection) (resource)
@@ -531,10 +568,6 @@ No optional inputs.
 ## Outputs
 
 The following outputs are exported:
-
-### <a name="output_app_service_vnet_integration_id"></a> [app\_service\_vnet\_integration\_id](#output\_app\_service\_vnet\_integration\_id)
-
-Description: The ID of the virtual network integration for the App Service.
 
 ### <a name="output_bastion_host_id"></a> [bastion\_host\_id](#output\_bastion\_host\_id)
 
