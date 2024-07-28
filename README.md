@@ -1,4 +1,4 @@
-# terraform-project1
+# Terraform-Hub and Spoke Architecture
 ![hub and spoke final](https://github.com/user-attachments/assets/c40821de-b05f-4935-84d9-6c3e6b537593)
 
 
