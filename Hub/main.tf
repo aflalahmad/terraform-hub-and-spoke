@@ -280,7 +280,7 @@ data "azurerm_virtual_network" "spoke3vnet" {
 }
 
 
-resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
+resource "azurerm_virtual_network_peering" "spoke3_to_hub" {
     for_each = var.vnet_peerings
 
     name                     = "spoke3-to-hub-peering-${each.key}"  
@@ -299,7 +299,7 @@ resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
     ]
 }
 
-resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
+resource "azurerm_virtual_network_peering" "hub_to_spoke3" {
     for_each = var.vnet_peerings
 
     name                     = "hub-to-spoke3-peering-${each.key}" 

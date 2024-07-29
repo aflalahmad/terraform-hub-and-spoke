@@ -201,10 +201,26 @@ resource "azurerm_key_vault" "kv" {
   location = azurerm_resource_group.rg.location
   tenant_id = data.azurerm_client_config.current.tenant_id
   sku_name = "standard"
+  
 
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azuread_client_config.current.object_id
+    
+    certificate_permissions = [
+      "get",
+      "list",
+      "delete",
+      "create",
+      "import",
+      "update",
+      "managecontacts",
+      "getissuers",
+      "listissuers",
+      "setissuers",
+      "deleteissuers",
+      "manageissuers",
+    ]
 
     secret_permissions = [
     "Backup",
@@ -216,6 +232,14 @@ resource "azurerm_key_vault" "kv" {
     "Restore",
     "Set",
   ]
+
+    key_permissions = [
+      "get",
+      "list",
+      "create",
+      "update",
+      "delete",
+    ]
   }
   
 }
