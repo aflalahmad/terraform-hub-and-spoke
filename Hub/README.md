@@ -1,8 +1,41 @@
 <!-- BEGIN_TF_DOCS -->
-# Hub Resource Group
+## Hub Resource Group
+# Centralized Services and Networking Overview
+The Hub Resource Group contains resources that provide centralized services and networking for the entire infrastructure, acting as a central point for connectivity and security management.
 
-This resource groups including virtual networks (VNets) with subnets and network security groups (NSGs) adn virtual network gateway,vpn connection and virtual network integration etc.. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
+# Integration and Communication Between Spokes
+- 1.Create the Resource Group: Set up a resource group for the hub to house all centralized services and networking resources.
 
+- 2.Create the Virtual Network: Define a virtual network for the hub, specifying the address space and other configurations.
+
+- 3.Create Subnets: Segment the virtual network into smaller subnets, each with its own address prefix and potential service delegations.
+
+- 4.Create Public IPs: Allocate public IP addresses for resources that need to be accessible from the internet.
+
+- 5.Create a Bastion Host: Deploy a Bastion Host for secure RDP/SSH access to virtual machines in the network without exposing them to the public internet.
+
+- 6.Create a Virtual Network Gateway: Establish a VPN gateway to enable site-to-site VPN connections between on-premises and Azure.
+
+- 7.Create a Firewall: Deploy a firewall to protect and control inbound and outbound traffic across the network.
+
+- 8.Create a Firewall Policy: Define a firewall policy to manage rules and settings for the Azure Firewall.
+
+- 9.Create an IP Group: Organize IP addresses into groups for easier management and application of firewall rules.
+
+- 10.Create Firewall Rules: Configure network and application rules within the firewall policy to control traffic flow.
+
+- 11.Set Up Virtual Network Peering: Establish peering connections between the hub virtual network and the spoke virtual networks to enable communication between them.
+
+## Integration with On-Premises Network
+- 1.Define On-Premises Public IP and Virtual Network: Obtain the public IP address and define the virtual network for the on-premises infrastructure.
+
+- 2.Create a Local Network Gateway: Set up a local network gateway in Azure to represent the on-premises VPN device. Specify the public IP address of the on-premises VPN device and the address space used in the on-premises network.
+
+- 3.Create a VPN Connection: Establish a VPN connection between the Azure virtual network gateway and the on-premises local network gateway. Configure the connection type (IPsec) and the shared key for authentication.
+
+- 4.Create a Route Table: Define a route table to manage traffic routing between the on-premises network and Azure. Add routes to ensure traffic destined for the on-premises network is correctly directed through the VPN gateway.
+
+- 5.Associate the Route Table with Subnets: Link the route table to the appropriate subnets within the hub virtual network to enforce the routing rules.
 # Diagram
 ![Screenshot 2024-07-23 102105](https://github.com/user-attachments/assets/b0dee401-e906-4410-837b-f7a492b5c44c)
 
@@ -289,7 +322,7 @@ data "azurerm_virtual_network" "spoke3vnet" {
 }
 
 
-resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
+resource "azurerm_virtual_network_peering" "spoke3_to_hub" {
     for_each = var.vnet_peerings
 
     name                     = "spoke3-to-hub-peering-${each.key}"  
@@ -308,7 +341,7 @@ resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
     ]
 }
 
-resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
+resource "azurerm_virtual_network_peering" "hub_to_spoke3" {
     for_each = var.vnet_peerings
 
     name                     = "hub-to-spoke3-peering-${each.key}" 
@@ -375,16 +408,12 @@ resource "azurerm_route_table" "route_table" {
   resource_group_name = azurerm_resource_group.rg.name
   location = azurerm_resource_group.rg.location
   depends_on = [ azurerm_resource_group.rg,azurerm_subnet.subnet ]
-}
-
-resource "azurerm_route" "route-to-spoke1" {
+  route {
   name = "To-spoke1"
-  resource_group_name = azurerm_resource_group.rg.name
-  route_table_name = azurerm_route_table.route_table.name
   next_hop_type = "VirtualAppliance"
   address_prefix = "10.30.0.0/16"
   next_hop_in_ip_address = "10.10.3.4"
-  depends_on = [ azurerm_route_table.route_table ]
+}
 }
 resource "azurerm_subnet_route_table_association" "route-table-ass" {
    subnet_id                 = azurerm_subnet.subnets["GatewaySubnet"].id
@@ -458,7 +487,6 @@ The following resources are used by this module:
 - [azurerm_local_network_gateway.hub_local_network_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/local_network_gateway) (resource)
 - [azurerm_public_ip.publi_ips](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
-- [azurerm_route.route-to-spoke1](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route) (resource)
 - [azurerm_route_table.route_table](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
 - [azurerm_subnet.subnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_route_table_association.route-table-ass](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
@@ -467,8 +495,10 @@ The following resources are used by this module:
 - [azurerm_virtual_network_gateway_connection.onprem_vpn_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway_connection) (resource)
 - [azurerm_virtual_network_peering.hub_to_spoke1](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_virtual_network_peering.hub_to_spoke2](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
+- [azurerm_virtual_network_peering.hub_to_spoke3](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_virtual_network_peering.spoke1_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_virtual_network_peering.spoke2_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
+- [azurerm_virtual_network_peering.spoke3_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_public_ip.onprem_publicip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/public_ip) (data source)
 - [azurerm_virtual_network.onprem_vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 - [azurerm_virtual_network.spoke1vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
