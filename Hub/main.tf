@@ -146,7 +146,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
       name             = "Allow-RDP"
       source_addresses = ["103.25.44.14"]   
       destination_ports = ["3389"]
-      destination_address = azurerm_public_ip.public_ips["AzureFirewallSubnet"].ip_address
+      destination_address = azurerm_public_ip.publi_ips["firewall-pip"].ip_address
       translated_address = "10.100.2.4"   
       translated_port    = "3389"
       protocols         = ["TCP"]
@@ -374,9 +374,9 @@ resource "azurerm_route_table" "route_table" {
 }
 }
 resource "azurerm_subnet_route_table_association" "route-table-ass" {
-   subnet_id                 = azurerm_subnet.subnets["GatewaySubnet"].id
+   subnet_id                 = azurerm_subnet.subnet["GatewaySubnet"].id
   route_table_id = azurerm_route_table.route_table.id
-  depends_on = [ azurerm_subnet.subnets , azurerm_route_table.route_table ]
+  depends_on = [ azurerm_subnet.subnet , azurerm_route_table.route_table ]
 }
 /*
 resource "azurerm_monitor_diagnostic_setting" "diagnostic_setting" {
