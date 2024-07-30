@@ -36,5 +36,5 @@ The Hub Resource Group contains resources that provide centralized services and 
 
 - 5.Associate the Route Table with Subnets: Link the route table to the appropriate subnets within the hub virtual network to enforce the routing rules.
 # Diagram
-![Screenshot 2024-07-23 102105](https://github.com/user-attachments/assets/b0dee401-e906-4410-837b-f7a492b5c44c)
+![Hub](/home/aflalahmad/terraform-project1/Images/Hub.png)
 

@@ -45,4 +45,4 @@ Step-by-Step Guide
 
 # Diagram
 
-![Screenshot 2024-07-23 102202](https://github.com/user-attachments/assets/418e3838-b115-410f-ad80-5fca878ec5ad)
+![Spoke2](Images/spoke2.png)

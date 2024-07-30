@@ -47,4 +47,4 @@ Associate the route table with the subnets to enforce the routing rules and ensu
 
 
 # Diagram
-![Screenshot 2024-07-23 102131](https://github.com/user-attachments/assets/b257736a-0d7e-4af4-b70c-fa8add008d65)
+![onprem](Images/onprem.png)

@@ -87,5 +87,5 @@ Optional Resources
 
 # Diagram
 
-![Screenshot 2024-07-23 102152](https://github.com/user-attachments/assets/8ae150bf-6140-4d51-bf7c-df09f2be74f9)
+![Spoke1](Images/spoke1.png)
 
