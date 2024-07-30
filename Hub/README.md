@@ -3,6 +3,14 @@
 # Centralized Services and Networking Overview
 The Hub Resource Group contains resources that provide centralized services and networking for the entire infrastructure, acting as a central point for connectivity and security management.
 
+## Prerequisites
+
+Before running this Terraform configuration, ensure you have the following prerequisites:
+- Terraform installed on your local machine.
+- Azure CLI installed and authenticated.
+- Proper access permissions to create resources in the Azure subscription.
+
+## Configuration details
 # Integration and Communication Between Spokes
 - 1.Create the Resource Group: Set up a resource group for the hub to house all centralized services and networking resources.
 

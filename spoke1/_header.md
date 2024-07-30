@@ -2,6 +2,13 @@
 
 This Resource Group  including virtual networks (VNets) with subnets and network security groups (NSGs). The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
 
+## Prerequisites
+
+Before running this Terraform configuration, ensure you have the following prerequisites:
+- Terraform installed on your local machine.
+- Azure CLI installed and authenticated.
+- Proper access permissions to create resources in the Azure subscription.
+## Configuration details
 ## Data Sources
 1. data "azurerm_client_config" "current" {}
 

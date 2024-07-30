@@ -2,8 +2,14 @@
 # Spoke3 Resource Group
 
 This Resource Group  including App service and app service plan. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
+## Prerequisites
 
-Steps
+Before running this Terraform configuration, ensure you have the following prerequisites:
+- Terraform installed on your local machine.
+- Azure CLI installed and authenticated.
+- Proper access permissions to create resources in the Azure subscription.
+
+## Configuration details
 1. Resource Group
 - Start by creating a resource group where all your resources will be deployed.
 
