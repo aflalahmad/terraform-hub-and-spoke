@@ -46,3 +46,15 @@ Step-by-Step Guide
 # Diagram
 
 ![Spoke2](Images/spoke2.png)
+
+###### Apply the Terraform configurations :
+Deploy the resources using Terraform,
+```
+terraform init
+```
+```
+terraform plan "--var-file=variables.tfvars"
+```
+```
+terraform apply "--var-file=variables.tfvars"
+```

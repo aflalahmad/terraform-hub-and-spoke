@@ -11,9 +11,11 @@ variable "rg" {
 }
 
 variable "stgacc_name" {
-    type = string
-  
+  description = "The name of the Azure Storage Account. Must be unique within Azure."
+  type        = string
 }
+
 variable "container_name" {
-  type = string
+  description = "The name of the Storage Account Container used to store state files."
+  type        = string
 }

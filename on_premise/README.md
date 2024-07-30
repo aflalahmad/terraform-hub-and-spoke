@@ -6,10 +6,10 @@ This resource groups including virtual networks (VNets) with subnets and network
 ## Integration with On-Premises Network
 - Create the Resource Group
 
-Set up a resource group for the on-premises integration to house all related resources.
+ Set up a resource group for the on-premises integration to house all related resources.
 - Create the Virtual Network
 
-Define a virtual network for the on-premises environment, specifying the address space and other configurations.
+ Define a virtual network for the on-premises environment, specifying the address space and other configurations.
 - Create Subnets
 
 Segment the virtual network into smaller subnets, each with its own address prefix.
@@ -43,7 +43,19 @@ Define routes to direct traffic through the VPN gateway.
 Associate the route table with the subnets to enforce the routing rules and ensure proper traffic flow between on-premises and Azure.
 
 # Diagram
-![Screenshot 2024-07-23 102131](https://github.com/user-attachments/assets/b257736a-0d7e-4af4-b70c-fa8add008d65)
+![onprem](Images/onprem.png)
+
+###### Apply the Terraform configurations :
+Deploy the resources using Terraform,
+```
+terraform init
+```
+```
+terraform plan "--var-file=variables.tfvars"
+```
+```
+terraform apply "--var-file=variables.tfvars"
+```
 
 ```hcl
 resource "azurerm_resource_group" "rg" {

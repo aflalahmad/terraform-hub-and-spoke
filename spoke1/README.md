@@ -3,9 +3,103 @@
 
 This Resource Group  including virtual networks (VNets) with subnets and network security groups (NSGs). The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
 
+## Data Sources
+1. data "azurerm\_client\_config" "current" {}
+
+- Retrieves the Azure credentials for the current subscription.
+2. data "azuread\_client\_config" "current" {}
+
+- Retrieves the Azure AD credentials for the current subscription.
+## Resource Group
+3. resource "azurerm\_resource\_group" "rg" {}
+- Creates an Azure Resource Group to organize and manage Azure resources.
+## Virtual Network
+4. resource "azurerm\_virtual\_network" "vnets" {}
+- Defines a Virtual Network (VNet) with specified address space and location, using the previously created Resource Group.
+## Subnets
+5. resource "azurerm\_subnet" "subnets" {}
+- Creates Subnets within the VNet, specifying address prefixes and associating them with the VNet.
+## Network Security Group (NSG)
+6. resource "azurerm\_network\_security\_group" "nsg" {}
+- Defines a Network Security Group (NSG) with security rules. Rules are dynamically created based on local variables.
+## NSG Association
+7. resource "azurerm\_subnet\_network\_security\_group\_association" "nsg-association" {}
+- Associates the NSG with the created subnets to enforce the security rules.
+## Network Interface Card (NIC)
+8. resource "azurerm\_network\_interface" "nic" {}
+- Creates Network Interface Cards (NICs) for virtual machines, attaching them to the specified subnets.
+## Virtual Machines (VMs)
+9. resource "azurerm\_virtual\_machine" "vm" {}
+- Deploys Virtual Machines using the defined NICs, with specified configurations for size, storage, and OS profile.
+## Recovery Services Vault
+10. resource "azurerm\_recovery\_services\_vault" "rsv" {}
+
+- Creates a Recovery Services Vault for backing up VMs.
+11. resource "azurerm\_backup\_policy\_vm" "backup\_policy" {}
+
+- Defines a backup policy for the VMs with schedules and retention rules.
+12. resource "azurerm\_backup\_protected\_vm" "backup\_protected" {}
+
+- Associates VMs with the backup policy to enable backup.
+## Key Vault
+13. resource "azurerm\_key\_vault" "kv" {}
+
+- Creates an Azure Key Vault for storing secrets such as VM admin usernames and passwords.
+14. resource "azurerm\_key\_vault\_secret" "vm\_admin\_username" {}
+
+- Stores VM admin usernames in the Key Vault.
+15. resource "azurerm\_key\_vault\_secret" "vm\_admin\_password" {}
+
+- Stores VM admin passwords in the Key Vault.
+## Storage Account
+16. resource "azurerm\_storage\_account" "stgacc" {}
+- Creates an Azure Storage Account for storing data.
+Optional Resources
+17. resource "azurerm\_storage\_share" "fileshare" {}
+
+  - Defines a file share within the Storage Account.
+18. resource "azurerm\_virtual\_machine\_extension" "file-share-mount" {}
+
+-  Uses a custom script to mount the file share on VMs.
+19.  resource "azurerm\_route\_table" "spoke1-udr" {}
+ - Defines a route table for traffic routing between spokes through a firewall.
+20.  resource "azurerm\_subnet\_route\_table\_association" "spoke1udr\_subnet\_association" {}
+
+- Associates the route table with subnets.
+21.   resource "azurerm\_log\_analytics\_workspace" "log\_analytics" {}
+
+- Creates a Log Analytics Workspace for monitoring and analytics.
+22.  resource "azurerm\_network\_watcher" "network\_watcher" {}
+
+-  Ensures a Network Watcher exists for network monitoring.
+23.  resource "azurerm\_network\_watcher\_flow\_log" "nsg\_flow\_log" {}
+
+ - Enables NSG flow logs for network traffic analysis.
+24.  resource "azurerm\_monitor\_diagnostic\_setting" "vnet\_diagnostics" {}
+
+- Configures diagnostic settings for VNets to send logs to Log Analytics.
+25.  resource "azurerm\_policy\_definition" "diagnostics\_policy" {}
+
+ - Defines a custom Azure Policy to ensure diagnostics logs are enabled for resources.
+26.  resource "azurerm\_policy\_assignment" "assign\_policy" {}
+
+- Assigns the diagnostics policy to a resource group.
+
 # Diagram
 
-![Screenshot 2024-07-23 102152](https://github.com/user-attachments/assets/8ae150bf-6140-4d51-bf7c-df09f2be74f9)
+![Spoke1](Images/spoke1.png)
+
+###### Apply the Terraform configurations :
+Deploy the resources using Terraform,
+```
+terraform init
+```
+```
+terraform plan "--var-file=variables.tfvars"
+```
+```
+terraform apply "--var-file=variables.tfvars"
+```
 
 ```hcl
 
@@ -211,10 +305,26 @@ resource "azurerm_key_vault" "kv" {
   location = azurerm_resource_group.rg.location
   tenant_id = data.azurerm_client_config.current.tenant_id
   sku_name = "standard"
+  
 
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azuread_client_config.current.object_id
+    
+    certificate_permissions = [
+      "get",
+      "list",
+      "delete",
+      "create",
+      "import",
+      "update",
+      "managecontacts",
+      "getissuers",
+      "listissuers",
+      "setissuers",
+      "deleteissuers",
+      "manageissuers",
+    ]
 
     secret_permissions = [
     "Backup",
@@ -226,6 +336,14 @@ resource "azurerm_key_vault" "kv" {
     "Restore",
     "Set",
   ]
+
+    key_permissions = [
+      "get",
+      "list",
+      "create",
+      "update",
+      "delete",
+    ]
   }
   
 }

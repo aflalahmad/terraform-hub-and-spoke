@@ -43,8 +43,17 @@ Associate the route table with the subnets to enforce the routing rules and ensu
 
 
 
-
-
-
 # Diagram
 ![onprem](Images/onprem.png)
+
+###### Apply the Terraform configurations :
+Deploy the resources using Terraform,
+```
+terraform init
+```
+```
+terraform plan "--var-file=variables.tfvars"
+```
+```
+terraform apply "--var-file=variables.tfvars"
+```

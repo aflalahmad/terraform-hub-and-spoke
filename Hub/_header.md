@@ -35,6 +35,19 @@ The Hub Resource Group contains resources that provide centralized services and 
 - 4.Create a Route Table: Define a route table to manage traffic routing between the on-premises network and Azure. Add routes to ensure traffic destined for the on-premises network is correctly directed through the VPN gateway.
 
 - 5.Associate the Route Table with Subnets: Link the route table to the appropriate subnets within the hub virtual network to enforce the routing rules.
+- 
 # Diagram
 ![Hub](/home/aflalahmad/terraform-project1/Images/Hub.png)
+
+###### Apply the Terraform configurations :
+Deploy the resources using Terraform,
+```
+terraform init
+```
+```
+terraform plan "--var-file=variables.tfvars"
+```
+```
+terraform apply "--var-file=variables.tfvars"
+```
 

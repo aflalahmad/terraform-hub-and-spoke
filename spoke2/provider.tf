@@ -6,6 +6,12 @@ terraform {
     }
   }
   required_version = ">= 1.1.0"
+  backend "azurerm" {
+    resource_group_name  = "backendRG"
+    storage_account_name = "backednstgacc"
+    container_name       = "mycontainer"
+    key                  = "spoke2.tfstate"
+  }
 }
 
 provider "azurerm" {
