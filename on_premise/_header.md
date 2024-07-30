@@ -5,10 +5,10 @@ This resource groups including virtual networks (VNets) with subnets and network
 ## Integration with On-Premises Network
 - Create the Resource Group
 
-Set up a resource group for the on-premises integration to house all related resources.
+ Set up a resource group for the on-premises integration to house all related resources.
 - Create the Virtual Network
 
-Define a virtual network for the on-premises environment, specifying the address space and other configurations.
+ Define a virtual network for the on-premises environment, specifying the address space and other configurations.
 - Create Subnets
 
 Segment the virtual network into smaller subnets, each with its own address prefix.
