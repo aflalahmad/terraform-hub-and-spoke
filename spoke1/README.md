@@ -663,6 +663,7 @@ resource "azurerm_policy_assignment" "assign_policy" {
   ]
 }
 */
+
 ```
 
 <!-- markdownlint-disable MD033 -->

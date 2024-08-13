@@ -277,6 +277,42 @@ resource "azurerm_storage_account" "stgacc" {
   }
 }
 
+
+# create private dns zone
+resource "azurerm_private_dns_zone" "ptivate-dns-zone" {
+  name = "privatelink.azurewebsites.net"
+  resource_group_name = azurerm_resource_group.rg.name
+  
+}
+#hub vnet using data
+data "azurerm_virtual_network" "hub_vnets" {
+  name = "HubVNet"
+  resource_group_name = "HubRG"
+}
+# attach virtual network link
+resource "azurerm_private_dns_zone_virtual_network_link" "vnet-link-hub" {
+   name = "vnetlink-hub"
+   virtual_network_id = data.azurerm_virtual_network.hub_vnets.id
+   private_dns_zone_name = azurerm_private_dns_zone.ptivate-dns-zone.name
+   resource_group_name = azurerm_resource_group.rg.name
+   depends_on = [ azurerm_private_dns_zone.ptivate-dns-zone ]
+}
+#create private endpoint
+resource "azurerm_private_endpoint" "private_endpoint" {
+  name = "private-endpoint-spoke1"
+  location = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  subnet_id = azurerm_subnet.subnets["spokesubnet1"].id
+  private_service_connection {
+    name = "privateserviceconnection"
+    private_connection_resource_id = azurerm_storage_account.stgacc.id
+    is_manual_connection = false
+    subresource_names = ["file"]
+  }
+  depends_on = [ azurerm_subnet.subnets ]
+}
+
+
 /*
 resource "azurerm_storage_share" "fileshare" {
 
@@ -552,3 +588,4 @@ resource "azurerm_policy_assignment" "assign_policy" {
   ]
 }
 */
+
