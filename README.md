@@ -1,5 +1,5 @@
 # Terraform-Hub and Spoke Architecture
-![hub and spoke final](Images/hub and spoke final.png)
+![hub and spoke final](Images/hub_spoke_overall.png)
 
 
 
