@@ -4,6 +4,7 @@ rg = {
 }
 vnets = {
      spoke1VNet= {
+        vnet_name = "spoke1VNet"
         address_space = "10.30.0.0/16"
     }
 }
@@ -30,7 +31,7 @@ vms = {
         host_name = "myhostname1"
         disk_name = "mydatadisk1"
         vm_size = "Standard_DS1_v2"
-        admin_username = "spoke1"
+        admin_username = "azureuser"
         admin_password = "P@ssword123456"
         data_disk_size_gb = 10
         subnet = "subnet1"
@@ -42,15 +43,14 @@ vms = {
         host_name = "myhostname2"
         disk_name = "mydatadisk2"
         vm_size = "Standard_DS1_v2"
-        admin_username = "spoke2"
-        admin_password = "P@ssword1234567"
+        admin_username = "azureuser"
+        admin_password = "P@ssword123456"
         data_disk_size_gb = 10
         subnet = "subnet2"
         
     }
 }
 
-keyvault_name = "Aflalkeyvault7766"
 rsv_name = "spoke1rescoveryservicevault"
 backuppolicy_name = "spoke1backuppolicy"
 log_analytics_workspace_name = "log-analytics-workspace"

@@ -94,7 +94,7 @@ Optional Resources
 
 # Diagram
 
-![Spoke1](Images/spoke1.png)
+![spoke1](Images/spoke1.png)
 
 ###### Apply the Terraform configurations :
 Deploy the resources using Terraform,
@@ -113,7 +113,7 @@ terraform apply "--var-file=variables.tfvars"
 data "azurerm_client_config" "current" {}
 data "azuread_client_config" "current" {}
 
-
+#resouce group
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
     location = var.rg.location
@@ -123,7 +123,7 @@ resource "azurerm_resource_group" "rg" {
 resource "azurerm_virtual_network" "vnets" {
     for_each = var.vnets
 
-    name  = each.key
+    name  = each.value.vnet_name
     address_space = [each.value.address_space]
     resource_group_name =azurerm_resource_group.rg.name
     location = azurerm_resource_group.rg.location
@@ -192,17 +192,7 @@ resource "azurerm_network_interface" "nic" {
     }
   
 }
-/*
-#Availability set for Virtual machine
-resource "azurerm_availability_set" "availability_set" {
-  name                = "my-availability-set"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
 
-  platform_fault_domain_count = 3
-  platform_update_domain_count = 5
-}
-*/
 #virtual machines
 resource "azurerm_virtual_machine" "vm" {
 
@@ -230,8 +220,8 @@ resource "azurerm_virtual_machine" "vm" {
 
   os_profile {
     computer_name  = each.value.host_name
-    admin_username = azurerm_key_vault_secret.vm_admin_username
-    admin_password = azurerm_key_vault_secret.vm_admin_password
+    admin_username = data.azurerm_key_vault_secret.vm_admin_username.value
+    admin_password = data.azurerm_key_vault_secret.vm_admin_password.value
   }
 
    os_profile_windows_config {
@@ -250,8 +240,68 @@ depends_on = [ azurerm_recovery_services_vault.rsv,azurerm_backup_policy_vm.back
   
 }
 
-#Recovery service vault for backup
+#key vault for secret username and password
+data "azurerm_key_vault" "kv" {
+    name = "Aflalkeyvault7788"
+    resource_group_name = "spoke1RG"
+}
+data "azurerm_key_vault_secret" "vm_admin_username" {
+     name = "aflal_username"
+     key_vault_id = data.azurerm_key_vault.kv.id
+}
+data "azurerm_key_vault_secret" "vm_admin_password" {
+     name = "aflal_password"
+     key_vault_id = data.azurerm_key_vault.kv.id
+}
+ 
+#using data block for Hub vnet
+data "azurerm_virtual_network" "Hub_VNet" {
+  name = "HubVNet"
+  resource_group_name = "HubRG"
+}
+#spoke1 to hub peerings
 
+resource "azurerm_virtual_network_peering" "spoke1_to_hub" {
+    for_each = var.vnet_peerings
+
+    name                     = "spoke1-to-hub-peering-${each.key}"  
+    virtual_network_name     = azurerm_virtual_network.vnets.name
+    remote_virtual_network_id = data.azurerm_virtual_network.Hub_VNet.id
+
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
+
+    resource_group_name = azurerm_resource_group.rg.name
+
+    depends_on = [
+        azurerm_virtual_network.vnets,
+        data.azurerm_virtual_network.Hub_VNet
+    ]
+}
+
+resource "azurerm_virtual_network_peering" "hub_to_spoke1" {
+    for_each = var.vnet_peerings
+
+    name                     = "hub-to-spoke1-peering-${each.key}" 
+    virtual_network_name     = data.azurerm_virtual_network.Hub_VNet.name
+    remote_virtual_network_id = azurerm_virtual_network.vnets.id
+
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
+
+    resource_group_name = azurerm_resource_group.rg.name
+
+    depends_on = [
+        azurerm_virtual_network.vnets,
+        data.azurerm_virtual_network.Hub_VNet
+
+    ]
+}
+
+
+#Recovery service vault for backup
 resource "azurerm_recovery_services_vault" "rsv" {
 
   name = var.rsv_name
@@ -261,6 +311,7 @@ resource "azurerm_recovery_services_vault" "rsv" {
   
 }
 
+#backup policy
 resource "azurerm_backup_policy_vm" "backup_policy" {
   name                = var.backuppolicy_name
   resource_group_name = azurerm_resource_group.rg.name
@@ -301,80 +352,11 @@ resource "azurerm_backup_protected_vm" "backup_protected" {
     source_vm_id = each.value.id
     backup_policy_id = azurerm_backup_policy_vm.backup_policy.id
 }
+ 
 
 
-
-#key vault for storing username and password
-resource "azurerm_key_vault" "kv" {
-
-  name = var.keyvault_name
-  resource_group_name = azurerm_resource_group.rg.name
-  location = azurerm_resource_group.rg.location
-  tenant_id = data.azurerm_client_config.current.tenant_id
-  sku_name = "standard"
-  
-
-  access_policy {
-    tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = data.azuread_client_config.current.object_id
-    
-    certificate_permissions = [
-      "get",
-      "list",
-      "delete",
-      "create",
-      "import",
-      "update",
-      "managecontacts",
-      "getissuers",
-      "listissuers",
-      "setissuers",
-      "deleteissuers",
-      "manageissuers",
-    ]
-
-    secret_permissions = [
-    "Backup",
-    "Delete",
-    "Get",
-    "List",
-    "Purge",
-    "Recover",
-    "Restore",
-    "Set",
-  ]
-
-    key_permissions = [
-      "get",
-      "list",
-      "create",
-      "update",
-      "delete",
-    ]
-  }
-  
-}
-
-resource "azurerm_key_vault_secret" "vm_admin_username" {
-
-  for_each = var.vms
-
-  name = "aflal-pusername"
-  value = each.value.admin_username
-  key_vault_id = azurerm_key_vault.kv.id
-  
-}
-
-resource "azurerm_key_vault_secret" "vm_admin_password" {
-
-  for_each = var.vms
-
-  name = "aflal-ppassword"
-  value = each.value.admin_password
-  key_vault_id = azurerm_key_vault.kv.id
-  
-}
-#storage account
+/*
+#storage account for file share
 resource "azurerm_storage_account" "stgacc" {
     
   name = "msystorageaccount"
@@ -388,7 +370,7 @@ resource "azurerm_storage_account" "stgacc" {
   }
 }
 
-/*
+#file share
 resource "azurerm_storage_share" "fileshare" {
 
   name = "myfilshare"
@@ -397,6 +379,8 @@ resource "azurerm_storage_share" "fileshare" {
   
 
 }
+
+#fileshare extension
 resource "azurerm_virtual_machine_extension" "file-share-mount" {
   for_each = var.vms
   name = "myfilesharemount-${each.key}"
@@ -418,6 +402,52 @@ resource "azurerm_virtual_machine_extension" "file-share-mount" {
 }
 
 */
+
+/*
+# create private dns zone
+resource "azurerm_private_dns_zone" "ptivate-dns-zone" {
+  name = "privatelink.azurewebsites.net"
+  resource_group_name = azurerm_resource_group.rg.name 
+}
+#hub vnet using data
+data "azurerm_virtual_network" "hub_vnets" {
+  name = "HubVNet"
+  resource_group_name = "HubRG"
+}
+# attach virtual network link
+resource "azurerm_private_dns_zone_virtual_network_link" "vnet-link-hub" {
+   name = "vnetlink-hub"
+   virtual_network_id = data.azurerm_virtual_network.hub_vnets.id
+   private_dns_zone_name = azurerm_private_dns_zone.ptivate-dns-zone.name
+   resource_group_name = azurerm_resource_group.rg.name
+   depends_on = [ azurerm_private_dns_zone.ptivate-dns-zone ]
+}
+#create private endpoint
+resource "azurerm_private_endpoint" "private_endpoint" {
+  name = "private-endpoint-spoke1"
+  location = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  subnet_id = azurerm_subnet.subnets["spokesubnet1"].id
+  private_service_connection {
+    name = "privateserviceconnection"
+    private_connection_resource_id = azurerm_storage_account.stgacc.id
+    is_manual_connection = false
+    subresource_names = ["file"]
+  }
+  depends_on = [ azurerm_subnet.subnets ]
+}
+#create dns record
+resource "azurerm_private_dns_a_record" "dns_record" {
+  name = "file1"
+  zone_name = azurerm_private_dns_zone.pr_dns_zone.name
+  resource_group_name = azurerm_private_dns_zone.pr_dns_zone.resource_group_name
+  ttl = 300
+  records = [ azurerm_private_endpoint.private_endpoint.private_service_connection[0].private_ip_address ]
+  depends_on = [ azurerm_private_dns_zone.private_dns_zone , azurerm_private_endpoint.private_endpoint  ]
+}
+
+*/
+
 /*
 #route table for communicate between spoke1 and spoke2 through firewall
 resource "azurerm_route_table" "spoke1-udr" {
@@ -454,8 +484,6 @@ resource "azurerm_log_analytics_workspace" "log_analytics" {
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
-
-
 
 # Ensure a Network Watcher exists in the region
 resource "azurerm_network_watcher" "network_watcher" {
@@ -689,20 +717,22 @@ The following resources are used by this module:
 
 - [azurerm_backup_policy_vm.backup_policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/backup_policy_vm) (resource)
 - [azurerm_backup_protected_vm.backup_protected](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/backup_protected_vm) (resource)
-- [azurerm_key_vault.kv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault) (resource)
-- [azurerm_key_vault_secret.vm_admin_password](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
-- [azurerm_key_vault_secret.vm_admin_username](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
 - [azurerm_network_interface.nic](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface) (resource)
 - [azurerm_network_security_group.nsg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_group) (resource)
 - [azurerm_recovery_services_vault.rsv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/recovery_services_vault) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
-- [azurerm_storage_account.stgacc](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) (resource)
 - [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_network_security_group_association.nsg-association](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_network_security_group_association) (resource)
 - [azurerm_virtual_machine.vm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine) (resource)
 - [azurerm_virtual_network.vnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
+- [azurerm_virtual_network_peering.hub_to_spoke1](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
+- [azurerm_virtual_network_peering.spoke1_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azuread_client_config.current](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/data-sources/client_config) (data source)
 - [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
+- [azurerm_key_vault.kv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault) (data source)
+- [azurerm_key_vault_secret.vm_admin_password](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault_secret) (data source)
+- [azurerm_key_vault_secret.vm_admin_username](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault_secret) (data source)
+- [azurerm_virtual_network.Hub_VNet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -712,12 +742,6 @@ The following input variables are required:
 ### <a name="input_backuppolicy_name"></a> [backuppolicy\_name](#input\_backuppolicy\_name)
 
 Description: Name of the backup policy.
-
-Type: `string`
-
-### <a name="input_keyvault_name"></a> [keyvault\_name](#input\_keyvault\_name)
-
-Description: Name of the Azure Key Vault.
 
 Type: `string`
 
@@ -786,6 +810,20 @@ map(object({
   }))
 ```
 
+### <a name="input_vnet_peerings"></a> [vnet\_peerings](#input\_vnet\_peerings)
+
+Description: Map of VNet peering settings.
+
+Type:
+
+```hcl
+map(object({
+    allow_forwarded_traffic      = bool
+    allow_gateway_transit        = bool
+    allow_virtual_network_access = bool
+  }))
+```
+
 ### <a name="input_vnets"></a> [vnets](#input\_vnets)
 
 Description: Map of virtual network details.
@@ -794,6 +832,7 @@ Type:
 
 ```hcl
 map(object({
+    vnet_name = strings
     address_space = string
   }))
 ```

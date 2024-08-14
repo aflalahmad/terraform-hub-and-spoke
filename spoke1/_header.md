@@ -94,7 +94,7 @@ Optional Resources
 
 # Diagram
 
-![Spoke1](Images/spoke1.png)
+![spoke1](Images/spoke1.png)
 
 ###### Apply the Terraform configurations :
 Deploy the resources using Terraform,

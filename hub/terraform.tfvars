@@ -53,4 +53,12 @@ vnet_peerings = {
   }
 }
 
+virtual_network_gateway_name = "vnet_gateway"
+
+firewall_name = "hubfirewall"
+
+firewall_policy_name = "firewall-policy"
+
 hub_local_network_gateway_name = "hub-to-onprem"
+
+vnet_gateway_connection = "hub-vpn-connection"

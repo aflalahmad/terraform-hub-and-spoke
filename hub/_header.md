@@ -45,7 +45,7 @@ Before running this Terraform configuration, ensure you have the following prere
 - 5.Associate the Route Table with Subnets: Link the route table to the appropriate subnets within the hub virtual network to enforce the routing rules.
 - 
 # Diagram
-![Hub](/home/aflalahmad/terraform-project1/Images/Hub.png)
+![hub](/home/aflalahmad/terraform-hub-and-spoke/Images/hub.png)
 
 ###### Apply the Terraform configurations :
 Deploy the resources using Terraform,

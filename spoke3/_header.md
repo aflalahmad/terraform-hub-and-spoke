@@ -32,7 +32,7 @@ Before running this Terraform configuration, ensure you have the following prere
 
 # Diagram
 
-![Spoke3](Images/spoke3.png)
+![spoke3](Images/spoke3.png)
 
 ###### Apply the Terraform configurations :
 Deploy the resources using Terraform,

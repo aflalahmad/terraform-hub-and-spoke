@@ -46,7 +46,7 @@ Before running this Terraform configuration, ensure you have the following prere
 - 5.Associate the Route Table with Subnets: Link the route table to the appropriate subnets within the hub virtual network to enforce the routing rules.
 -
 # Diagram
-![Hub](/home/aflalahmad/terraform-project1/Images/Hub.png)
+![hub](/home/aflalahmad/terraform-hub-and-spoke/Images/hub.png)
 
 ###### Apply the Terraform configurations :
 Deploy the resources using Terraform,
@@ -61,6 +61,7 @@ terraform apply "--var-file=variables.tfvars"
 ```
 
 ```hcl
+#Create a resource group
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
     location = var.rg.location
@@ -101,7 +102,6 @@ resource "azurerm_subnet" "subnet" {
   }
 }
   
-
 #publiips for all
 resource "azurerm_public_ip" "publi_ips" {
   for_each = var.publicip_names
@@ -117,7 +117,6 @@ resource "azurerm_public_ip" "publi_ips" {
 }
 
 #bastion host
-
 resource "azurerm_bastion_host" "example" {
   name                = var.bastionhost_name
   location            = azurerm_resource_group.rg.location
@@ -131,10 +130,9 @@ resource "azurerm_bastion_host" "example" {
 }
 
 #virtual network gateway
-
 resource "azurerm_virtual_network_gateway" "vnetgateway" {
 
-    name = "vnet-gateway"
+    name = var.virtual_network_gateway_name
     resource_group_name = azurerm_resource_group.rg.name
     location = azurerm_resource_group.rg.location
     type = "Vpn"
@@ -155,7 +153,7 @@ resource "azurerm_virtual_network_gateway" "vnetgateway" {
 #firewall
 resource "azurerm_firewall" "firewall" {
 
-  name                = "hubFirewall"
+  name                = var.firewall_name
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -174,7 +172,7 @@ resource "azurerm_firewall" "firewall" {
 
 #firewall policy
 resource "azurerm_firewall_policy" "policy" {
-  name                = "firewall-policy"
+  name                = var.firewall_policy_name
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
  sku = "Standard"
@@ -182,18 +180,7 @@ resource "azurerm_firewall_policy" "policy" {
   
 }
 
-# create the ip group
-resource "azurerm_ip_group" "ip_group" {
-  name = "Ip-group"
-  resource_group_name = azurerm_resource_group.rg.name
-  location = azurerm_resource_group.rg.location
-  cidrs = [ "10.10.0.0/16","10.30.0.0/16","10.0.0.0/24" ]
-  depends_on = [ azurerm_resource_group.rg ]
-}
-
-
 #firewall rule
-
 resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
 
   name = "firewall-network-rule"
@@ -209,14 +196,13 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
       name             = "Allow-RDP"
       source_addresses = ["103.25.44.14"]   
       destination_ports = ["3389"]
-      destination_address = azurerm_public_ip.public_ips["AzureFirewallSubnet"].ip_address
+      destination_address = azurerm_public_ip.publi_ips["firewall-pip"].ip_address
       translated_address = "10.100.2.4"   
       translated_port    = "3389"
       protocols         = ["TCP"]
     }
   }
  
-
  network_rule_collection {
     name     = "AllowICMP_Rules"
     priority = 100
@@ -232,161 +218,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
   }
 }
 
-
-
-
-
-data "azurerm_virtual_network" "spoke1vnet" {
-  name = "spoke1VNet"
-  resource_group_name = "spoke1RG"
-  
-
-}
-
-
-#spoke1 peerings
-
-resource "azurerm_virtual_network_peering" "spoke1_to_hub" {
-    for_each = var.vnet_peerings
-
-    name                     = "spoke1-to-hub-peering-${each.key}"  
-    virtual_network_name     = data.azurerm_virtual_network.spoke1vnet.name
-    remote_virtual_network_id = azurerm_virtual_network.hubvnets.id
-
-    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
-    allow_gateway_transit      = each.value.allow_gateway_transit
-    allow_virtual_network_access = each.value.allow_virtual_network_access
-
-    resource_group_name = data.azurerm_virtual_network.spoke1vnet.resource_group_name
-
-    depends_on = [
-        data.azurerm_virtual_network.spoke1vnet,
-        azurerm_virtual_network.hubvnets
-    ]
-}
-
-resource "azurerm_virtual_network_peering" "hub_to_spoke1" {
-    for_each = var.vnet_peerings
-
-    name                     = "hub-to-spoke1-peering-${each.key}" 
-    virtual_network_name     = azurerm_virtual_network.hubvnets.name
-    remote_virtual_network_id = data.azurerm_virtual_network.spoke1vnet.id
-
-    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
-    allow_gateway_transit      = each.value.allow_gateway_transit
-    allow_virtual_network_access = each.value.allow_virtual_network_access
-
-    resource_group_name = azurerm_resource_group.rg.name
-
-    depends_on = [
-        data.azurerm_virtual_network.spoke1vnet,
-        azurerm_virtual_network.hubvnets
-
-    ]
-}
-
-
-data "azurerm_virtual_network" "spoke2vnet" {
-  name = "spoke2VNet"
-  resource_group_name = "spoke2RG"
-  
-}
-
-#spoke2 to hub peerings
-
-resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
-    for_each = var.vnet_peerings
-
-    name                     = "spoke2-to-hub-peering-${each.key}"  
-    virtual_network_name     = data.azurerm_virtual_network.spoke2vnet.name
-    remote_virtual_network_id = azurerm_virtual_network.hubvnets.id
-
-    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
-    allow_gateway_transit      = each.value.allow_gateway_transit
-    allow_virtual_network_access = each.value.allow_virtual_network_access
-
-    resource_group_name = data.azurerm_virtual_network.spoke2vnet.resource_group_name
-
-    depends_on = [
-        data.azurerm_virtual_network.spoke2vnet,
-        azurerm_virtual_network.hubvnets
-    ]
-}
-
-resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
-    for_each = var.vnet_peerings
-
-    name                     = "hub-to-spoke2-peering-${each.key}" 
-    virtual_network_name     = azurerm_virtual_network.hubvnets.name
-    remote_virtual_network_id = data.azurerm_virtual_network.spoke2vnet.id
-
-    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
-    allow_gateway_transit      = each.value.allow_gateway_transit
-    allow_virtual_network_access = each.value.allow_virtual_network_access
-
-    resource_group_name = azurerm_resource_group.rg.name
-
-    depends_on = [
-        data.azurerm_virtual_network.spoke2vnet,
-        azurerm_virtual_network.hubvnets
-
-    ]
-}
-
-#spoke3 to hub peering
-
-data "azurerm_virtual_network" "spoke3vnet" {
-  name = "spoke3_vnet"
-  resource_group_name = "spoke3RG"
-  
-  
-}
-
-
-resource "azurerm_virtual_network_peering" "spoke3_to_hub" {
-    for_each = var.vnet_peerings
-
-    name                     = "spoke3-to-hub-peering-${each.key}"  
-    virtual_network_name     = data.azurerm_virtual_network.spoke3vnet.name
-    remote_virtual_network_id = azurerm_virtual_network.hubvnets.id
-
-    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
-    allow_gateway_transit      = each.value.allow_gateway_transit
-    allow_virtual_network_access = each.value.allow_virtual_network_access
-
-    resource_group_name = data.azurerm_virtual_network.spoke3vnet.resource_group_name
-
-    depends_on = [
-        data.azurerm_virtual_network.spoke3vnet,
-        azurerm_virtual_network.hubvnets
-    ]
-}
-
-resource "azurerm_virtual_network_peering" "hub_to_spoke3" {
-    for_each = var.vnet_peerings
-
-    name                     = "hub-to-spoke3-peering-${each.key}" 
-    virtual_network_name     = azurerm_virtual_network.hubvnets.name
-    remote_virtual_network_id = data.azurerm_virtual_network.spoke3vnet.id
-
-    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
-    allow_gateway_transit      = each.value.allow_gateway_transit
-    allow_virtual_network_access = each.value.allow_virtual_network_access
-
-    resource_group_name = azurerm_resource_group.rg.name
-
-    depends_on = [
-        data.azurerm_virtual_network.spoke3vnet,
-        azurerm_virtual_network.hubvnets
-
-    ]
-}
-
-
-
-#connect to on premise
-
- 
+#connect to on premise 
  data "azurerm_public_ip" "onprem_publicip" {
    name = "onprem_vnetgatway_publicip"
    resource_group_name = "onprem_RG"
@@ -397,8 +229,7 @@ data "azurerm_virtual_network" "onprem_vnet" {
   resource_group_name = "onprem_RG"
 }
 
-
-
+#local network gateway
 resource "azurerm_local_network_gateway" "hub_local_network_gateway" {
     name = var.hub_local_network_gateway_name
     location = azurerm_resource_group.rg.location
@@ -409,8 +240,9 @@ resource "azurerm_local_network_gateway" "hub_local_network_gateway" {
      data.azurerm_public_ip.onprem_publicip,data.azurerm_virtual_network.onprem_vnet]
 }
 
+#gateway connection
 resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
-     name = "hub-vpn-connection"
+     name = var.vnet_gateway_connection
      location = azurerm_resource_group.rg.location
      resource_group_name = azurerm_resource_group.rg.name
      virtual_network_gateway_id = azurerm_virtual_network_gateway.vnetgateway.id
@@ -437,10 +269,11 @@ resource "azurerm_route_table" "route_table" {
 }
 }
 resource "azurerm_subnet_route_table_association" "route-table-ass" {
-   subnet_id                 = azurerm_subnet.subnets["GatewaySubnet"].id
+   subnet_id                 = azurerm_subnet.subnet["GatewaySubnet"].id
   route_table_id = azurerm_route_table.route_table.id
-  depends_on = [ azurerm_subnet.subnets , azurerm_route_table.route_table ]
+  depends_on = [ azurerm_subnet.subnet , azurerm_route_table.route_table ]
 }
+
 /*
 resource "azurerm_monitor_diagnostic_setting" "diagnostic_setting" {
   for_each = {
@@ -504,7 +337,6 @@ The following resources are used by this module:
 - [azurerm_firewall.firewall](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
 - [azurerm_firewall_policy.policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy) (resource)
 - [azurerm_firewall_policy_rule_collection_group.icmp_rule](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy_rule_collection_group) (resource)
-- [azurerm_ip_group.ip_group](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/ip_group) (resource)
 - [azurerm_local_network_gateway.hub_local_network_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/local_network_gateway) (resource)
 - [azurerm_public_ip.publi_ips](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
@@ -514,17 +346,8 @@ The following resources are used by this module:
 - [azurerm_virtual_network.hubvnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azurerm_virtual_network_gateway.vnetgateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway) (resource)
 - [azurerm_virtual_network_gateway_connection.onprem_vpn_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway_connection) (resource)
-- [azurerm_virtual_network_peering.hub_to_spoke1](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
-- [azurerm_virtual_network_peering.hub_to_spoke2](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
-- [azurerm_virtual_network_peering.hub_to_spoke3](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
-- [azurerm_virtual_network_peering.spoke1_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
-- [azurerm_virtual_network_peering.spoke2_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
-- [azurerm_virtual_network_peering.spoke3_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_public_ip.onprem_publicip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/public_ip) (data source)
 - [azurerm_virtual_network.onprem_vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
-- [azurerm_virtual_network.spoke1vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
-- [azurerm_virtual_network.spoke2vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
-- [azurerm_virtual_network.spoke3vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -540,6 +363,18 @@ Type: `string`
 ### <a name="input_bastionhost_name"></a> [bastionhost\_name](#input\_bastionhost\_name)
 
 Description: Name of the Bastion host.
+
+Type: `string`
+
+### <a name="input_firewall_name"></a> [firewall\_name](#input\_firewall\_name)
+
+Description: n/a
+
+Type: `string`
+
+### <a name="input_firewall_policy_name"></a> [firewall\_policy\_name](#input\_firewall\_policy\_name)
+
+Description: n/a
 
 Type: `string`
 
@@ -591,6 +426,18 @@ map(object({
     }))
   }))
 ```
+
+### <a name="input_virtual_network_gateway_name"></a> [virtual\_network\_gateway\_name](#input\_virtual\_network\_gateway\_name)
+
+Description: n/a
+
+Type: `string`
+
+### <a name="input_vnet_gateway_connection"></a> [vnet\_gateway\_connection](#input\_vnet\_gateway\_connection)
+
+Description: n/a
+
+Type: `string`
 
 ### <a name="input_vnet_name"></a> [vnet\_name](#input\_vnet\_name)
 

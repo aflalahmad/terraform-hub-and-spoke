@@ -20,7 +20,31 @@ variable "appservice_name" {
   description = "Name of the App Service."
 }
 
-variable "vnet_name" {
-  type        = string
-  description = "Name of the virtual network."
+variable "vnet_details" {
+  type = map(object({
+    vnet_name = string
+    address_space = string
+  }))
+  description = "The details of the VNET"
+}
+
+variable "subnet_details" {
+  type        = map(object({
+    subnet_name      = string
+    address_prefixes = string
+  }))
+  description = "Map of subnet details."
+  validation {
+    condition     = length(keys(var.subnet_details)) > 0
+    error_message = "At least one subnet detail must be defined."
+  }
+}
+
+variable "vnet_peerings" {
+  type        = map(object({
+    allow_forwarded_traffic      = bool
+    allow_gateway_transit        = bool
+    allow_virtual_network_access = bool
+  }))
+  description = "Map of VNet peering settings."
 }

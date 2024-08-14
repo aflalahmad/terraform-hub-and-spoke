@@ -2,7 +2,7 @@
 data "azurerm_client_config" "current" {}
 data "azuread_client_config" "current" {}
 
-
+#resouce group
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
     location = var.rg.location
@@ -12,7 +12,7 @@ resource "azurerm_resource_group" "rg" {
 resource "azurerm_virtual_network" "vnets" {
     for_each = var.vnets
 
-    name  = each.key
+    name  = each.value.vnet_name
     address_space = [each.value.address_space]
     resource_group_name =azurerm_resource_group.rg.name
     location = azurerm_resource_group.rg.location
@@ -81,17 +81,7 @@ resource "azurerm_network_interface" "nic" {
     }
   
 }
-/*
-#Availability set for Virtual machine
-resource "azurerm_availability_set" "availability_set" {
-  name                = "my-availability-set"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
 
-  platform_fault_domain_count = 3
-  platform_update_domain_count = 5
-}
-*/
 #virtual machines
 resource "azurerm_virtual_machine" "vm" {
 
@@ -119,8 +109,8 @@ resource "azurerm_virtual_machine" "vm" {
 
   os_profile {
     computer_name  = each.value.host_name
-    admin_username = azurerm_key_vault_secret.vm_admin_username
-    admin_password = azurerm_key_vault_secret.vm_admin_password
+    admin_username = data.azurerm_key_vault_secret.vm_admin_username.value
+    admin_password = data.azurerm_key_vault_secret.vm_admin_password.value
   }
 
    os_profile_windows_config {
@@ -139,8 +129,68 @@ depends_on = [ azurerm_recovery_services_vault.rsv,azurerm_backup_policy_vm.back
   
 }
 
-#Recovery service vault for backup
+#key vault for secret username and password
+data "azurerm_key_vault" "kv" {
+    name = "Aflalkeyvault7788"
+    resource_group_name = "spoke1RG"
+}
+data "azurerm_key_vault_secret" "vm_admin_username" {
+     name = "aflal_username"
+     key_vault_id = data.azurerm_key_vault.kv.id
+}
+data "azurerm_key_vault_secret" "vm_admin_password" {
+     name = "aflal_password"
+     key_vault_id = data.azurerm_key_vault.kv.id
+}
+ 
+#using data block for Hub vnet
+data "azurerm_virtual_network" "Hub_VNet" {
+  name = "HubVNet"
+  resource_group_name = "HubRG"
+}
+#spoke1 to hub peerings
 
+resource "azurerm_virtual_network_peering" "spoke1_to_hub" {
+    for_each = var.vnet_peerings
+
+    name                     = "spoke1-to-hub-peering-${each.key}"  
+    virtual_network_name     = azurerm_virtual_network.vnets.name
+    remote_virtual_network_id = data.azurerm_virtual_network.Hub_VNet.id
+
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
+
+    resource_group_name = azurerm_resource_group.rg.name
+
+    depends_on = [
+        azurerm_virtual_network.vnets,
+        data.azurerm_virtual_network.Hub_VNet
+    ]
+}
+
+resource "azurerm_virtual_network_peering" "hub_to_spoke1" {
+    for_each = var.vnet_peerings
+
+    name                     = "hub-to-spoke1-peering-${each.key}" 
+    virtual_network_name     = data.azurerm_virtual_network.Hub_VNet.name
+    remote_virtual_network_id = azurerm_virtual_network.vnets.id
+
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
+
+    resource_group_name = azurerm_resource_group.rg.name
+
+    depends_on = [
+        azurerm_virtual_network.vnets,
+        data.azurerm_virtual_network.Hub_VNet
+
+    ]
+}
+
+
+#Recovery service vault for backup
 resource "azurerm_recovery_services_vault" "rsv" {
 
   name = var.rsv_name
@@ -150,6 +200,7 @@ resource "azurerm_recovery_services_vault" "rsv" {
   
 }
 
+#backup policy
 resource "azurerm_backup_policy_vm" "backup_policy" {
   name                = var.backuppolicy_name
   resource_group_name = azurerm_resource_group.rg.name
@@ -190,80 +241,11 @@ resource "azurerm_backup_protected_vm" "backup_protected" {
     source_vm_id = each.value.id
     backup_policy_id = azurerm_backup_policy_vm.backup_policy.id
 }
+ 
 
 
-
-#key vault for storing username and password
-resource "azurerm_key_vault" "kv" {
-
-  name = var.keyvault_name
-  resource_group_name = azurerm_resource_group.rg.name
-  location = azurerm_resource_group.rg.location
-  tenant_id = data.azurerm_client_config.current.tenant_id
-  sku_name = "standard"
-  
-
-  access_policy {
-    tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = data.azuread_client_config.current.object_id
-    
-    certificate_permissions = [
-      "get",
-      "list",
-      "delete",
-      "create",
-      "import",
-      "update",
-      "managecontacts",
-      "getissuers",
-      "listissuers",
-      "setissuers",
-      "deleteissuers",
-      "manageissuers",
-    ]
-
-    secret_permissions = [
-    "Backup",
-    "Delete",
-    "Get",
-    "List",
-    "Purge",
-    "Recover",
-    "Restore",
-    "Set",
-  ]
-
-    key_permissions = [
-      "get",
-      "list",
-      "create",
-      "update",
-      "delete",
-    ]
-  }
-  
-}
-
-resource "azurerm_key_vault_secret" "vm_admin_username" {
-
-  for_each = var.vms
-
-  name = "aflal-pusername"
-  value = each.value.admin_username
-  key_vault_id = azurerm_key_vault.kv.id
-  
-}
-
-resource "azurerm_key_vault_secret" "vm_admin_password" {
-
-  for_each = var.vms
-
-  name = "aflal-ppassword"
-  value = each.value.admin_password
-  key_vault_id = azurerm_key_vault.kv.id
-  
-}
-#storage account
+/*
+#storage account for file share
 resource "azurerm_storage_account" "stgacc" {
     
   name = "msystorageaccount"
@@ -277,12 +259,44 @@ resource "azurerm_storage_account" "stgacc" {
   }
 }
 
+#file share
+resource "azurerm_storage_share" "fileshare" {
 
+  name = "myfilshare"
+  storage_account_name = azurerm_storage_account.stgacc.name
+  quota = 100
+  
+
+}
+
+#fileshare extension
+resource "azurerm_virtual_machine_extension" "file-share-mount" {
+  for_each = var.vms
+  name = "myfilesharemount-${each.key}"
+  virtual_machine_id = azurerm_virtual_machine.vm[each.key].id
+  publisher = "Microsoft.Compute"
+  type = "CustomScriptExtension"
+  type_handler_version = "1.10"
+
+  settings = jsonencode({
+    "commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -File ${path.module}/mount-fileshare.ps1 -storageAccountName ${azurerm_storage_account.stgacc.name} -storageAccountKey ${azurerm_storage_account.stgacc.primary_access_key} -fileShareName ${azurerm_storage_share.fileshare.name} -mountPoint 'Z:'"
+  })
+
+  protected_settings = jsonencode({
+    "storageAccountName" = azurerm_storage_account.stgacc.name
+    "storageAccountKey"  = azurerm_storage_account.stgacc.primary_access_key
+  })
+
+  depends_on = [azurerm_virtual_machine.vm]
+}
+
+*/
+
+/*
 # create private dns zone
 resource "azurerm_private_dns_zone" "ptivate-dns-zone" {
   name = "privatelink.azurewebsites.net"
-  resource_group_name = azurerm_resource_group.rg.name
-  
+  resource_group_name = azurerm_resource_group.rg.name 
 }
 #hub vnet using data
 data "azurerm_virtual_network" "hub_vnets" {
@@ -311,38 +325,18 @@ resource "azurerm_private_endpoint" "private_endpoint" {
   }
   depends_on = [ azurerm_subnet.subnets ]
 }
-
-
-/*
-resource "azurerm_storage_share" "fileshare" {
-
-  name = "myfilshare"
-  storage_account_name = azurerm_storage_account.stgacc.name
-  quota = 100
-  
-
-}
-resource "azurerm_virtual_machine_extension" "file-share-mount" {
-  for_each = var.vms
-  name = "myfilesharemount-${each.key}"
-  virtual_machine_id = azurerm_virtual_machine.vm[each.key].id
-  publisher = "Microsoft.Compute"
-  type = "CustomScriptExtension"
-  type_handler_version = "1.10"
-
-  settings = jsonencode({
-    "commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -File ${path.module}/mount-fileshare.ps1 -storageAccountName ${azurerm_storage_account.stgacc.name} -storageAccountKey ${azurerm_storage_account.stgacc.primary_access_key} -fileShareName ${azurerm_storage_share.fileshare.name} -mountPoint 'Z:'"
-  })
-
-  protected_settings = jsonencode({
-    "storageAccountName" = azurerm_storage_account.stgacc.name
-    "storageAccountKey"  = azurerm_storage_account.stgacc.primary_access_key
-  })
-
-  depends_on = [azurerm_virtual_machine.vm]
+#create dns record
+resource "azurerm_private_dns_a_record" "dns_record" {
+  name = "file1"
+  zone_name = azurerm_private_dns_zone.pr_dns_zone.name
+  resource_group_name = azurerm_private_dns_zone.pr_dns_zone.resource_group_name
+  ttl = 300
+  records = [ azurerm_private_endpoint.private_endpoint.private_service_connection[0].private_ip_address ]
+  depends_on = [ azurerm_private_dns_zone.private_dns_zone , azurerm_private_endpoint.private_endpoint  ]
 }
 
 */
+
 /*
 #route table for communicate between spoke1 and spoke2 through firewall
 resource "azurerm_route_table" "spoke1-udr" {
@@ -379,8 +373,6 @@ resource "azurerm_log_analytics_workspace" "log_analytics" {
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
-
-
 
 # Ensure a Network Watcher exists in the region
 resource "azurerm_network_watcher" "network_watcher" {

@@ -58,7 +58,21 @@ variable "vnet_peerings" {
   description = "Map of VNet peering settings."
 }
 
+variable "virtual_network_gateway_name" {
+  type = string
+}
+variable "firewall_name" {
+  type = string
+}
+variable "firewall_policy_name" {
+  type = string
+}
+
 variable "hub_local_network_gateway_name" {
   type        = string
   description = "Name of the hub's local network gateway."
+}
+
+variable "vnet_gateway_connection" {
+  type = string
 }

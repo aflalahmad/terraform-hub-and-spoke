@@ -1,10 +1,11 @@
+#create resource group
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
     location = var.rg.location
 }
 #virtual network
 resource "azurerm_virtual_network" "vnet" {
-  name = var.vnet_name
+  name = "spoke2_vnet"
   resource_group_name = azurerm_resource_group.rg.name
   location = azurerm_resource_group.rg.location
   address_space = ["10.0.0.0/24"]
@@ -117,16 +118,17 @@ resource "azurerm_application_gateway" "appGW" {
     depends_on = [azurerm_resource_group.rg ,azurerm_subnet.subnets ,azurerm_public_ip.public_ip]
  }
 
+#key vault for secret username and password
 data "azurerm_key_vault" "kv" {
-    name = "Aflalkeyvault7766"
+    name = "Aflalkeyvault7788"
     resource_group_name = "spoke1RG"
 }
 data "azurerm_key_vault_secret" "vm_admin_username" {
-     name = "aflal-pusername"
+     name = "aflal_username"
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 data "azurerm_key_vault_secret" "vm_admin_password" {
-     name = "aflal-ppassword"
+     name = "aflal_password"
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 
@@ -168,6 +170,53 @@ resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
     }
   }
 }
+
+
+#using data block for Hub vnet
+data "azurerm_virtual_network" "Hub_VNet" {
+  name = "HubVNet"
+  resource_group_name = "HubRG"
+}
+#spoke2 to hub peerings
+resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
+    for_each = var.vnet_peerings
+
+    name                     = "spoke2-to-hub-peering-${each.key}"  
+    virtual_network_name     = azurerm_virtual_network.vnet.name
+    remote_virtual_network_id = data.azurerm_virtual_network.Hub_VNet.id
+
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
+
+    resource_group_name = azurerm_resource_group.rg.name
+
+    depends_on = [
+        azurerm_virtual_network.vnet,
+        data.azurerm_virtual_network.Hub_VNet
+    ]
+}
+
+resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
+    for_each = var.vnet_peerings
+
+    name                     = "hub-to-spoke2-peering-${each.key}" 
+    virtual_network_name     = data.azurerm_virtual_network.Hub_VNet.name
+    remote_virtual_network_id = azurerm_virtual_network.vnet.id
+
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
+
+    resource_group_name = azurerm_resource_group.rg.name
+
+    depends_on = [
+        azurerm_virtual_network.vnet,
+        data.azurerm_virtual_network.Hub_VNet
+
+    ]
+}
+
 /*
 #Daily backup for VM
 # Recovery Services Vault

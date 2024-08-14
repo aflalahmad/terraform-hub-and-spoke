@@ -12,6 +12,7 @@ variable "rg" {
 
 variable "vnets" {
   type        = map(object({
+    vnet_name = strings
     address_space = string
   }))
   description = "Map of virtual network details."
@@ -73,10 +74,7 @@ variable "vms" {
   }
 }
 
-variable "keyvault_name" {
-  type        = string
-  description = "Name of the Azure Key Vault."
-}
+
 
 variable "rsv_name" {
   type        = string
@@ -96,4 +94,13 @@ variable "log_analytics_workspace_name" {
 variable "vm1" {
   type = string
   
+}
+
+variable "vnet_peerings" {
+  type        = map(object({
+    allow_forwarded_traffic      = bool
+    allow_gateway_transit        = bool
+    allow_virtual_network_access = bool
+  }))
+  description = "Map of VNet peering settings."
 }

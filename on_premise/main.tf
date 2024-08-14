@@ -1,8 +1,10 @@
+#create a resource group
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
     location = var.rg.location
 }
 
+#virtual network
 resource "azurerm_virtual_network" "onprem_vnets" {
 
     name  = var.vnet_name
@@ -14,7 +16,7 @@ resource "azurerm_virtual_network" "onprem_vnets" {
     depends_on = [ azurerm_resource_group.rg ]
 }
 
-
+#subnet
 resource "azurerm_subnet" "subnets" {
 
    for_each = var.subnet_details
@@ -27,6 +29,7 @@ resource "azurerm_subnet" "subnets" {
   
 }
 
+#public ip
 resource "azurerm_public_ip" "onprem_vnetgateway_pip" {
    name = var.public_ip_name
    resource_group_name = azurerm_resource_group.rg.name
@@ -36,6 +39,7 @@ resource "azurerm_public_ip" "onprem_vnetgateway_pip" {
    
 }
 
+#virtual network gateway
 resource "azurerm_virtual_network_gateway" "onprem_vnetgateway" {
     for_each = var.subnet_details
     name = "onprem-vnet-gateway"
@@ -67,6 +71,7 @@ data "azurerm_virtual_network" "hub_vnet" {
   resource_group_name = "HubRG"
 }
 
+#local network gateway
 resource "azurerm_local_network_gateway" "onprem_local_network_gateway" {
     name = var.onprem_local_network_gateway_name
     location = azurerm_resource_group.rg.location
@@ -77,6 +82,7 @@ resource "azurerm_local_network_gateway" "onprem_local_network_gateway" {
      data.azurerm_public_ip.hub_publicip,data.azurerm_virtual_network.hub_vnet]
 }
 
+#gateway connection
 resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
     for_each = var.subnet_details
      name = "onprem-vpn-connection"
@@ -93,17 +99,75 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
 
 
-data "azurerm_key_vault" "kv" {
-    name = "Aflalkeyvault7766"
-    resource_group_name = "spoke1RG"
+#key vault for storing username and password
+resource "azurerm_key_vault" "kv" {
+
+  name = var.keyvault_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  sku_name = "standard"
+  
+
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azuread_client_config.current.object_id
+    
+    certificate_permissions = [
+      "get",
+      "list",
+      "delete",
+      "create",
+      "import",
+      "update",
+      "managecontacts",
+      "getissuers",
+      "listissuers",
+      "setissuers",
+      "deleteissuers",
+      "manageissuers",
+    ]
+
+    secret_permissions = [
+    "Backup",
+    "Delete",
+    "Get",
+    "List",
+    "Purge",
+    "Recover",
+    "Restore",
+    "Set",
+  ]
+
+    key_permissions = [
+      "get",
+      "list",
+      "create",
+      "update",
+      "delete",
+    ]
+  }
+  
 }
-data "azurerm_key_vault_secret" "vm_admin_username" {
-     name = "aflal-pusername"
-     key_vault_id = data.azurerm_key_vault.kv.id
+
+#keyvault secret for username
+resource "azurerm_key_vault_secret" "vm_admin_username" {
+
+  for_each = var.vms
+  name = "aflal_username"
+  value = each.value.admin_username
+  key_vault_id = azurerm_key_vault.kv.id
+  
 }
-data "azurerm_key_vault_secret" "vm_admin_password" {
-     name = "aflal-ppassword"
-     key_vault_id = data.azurerm_key_vault.kv.id
+
+#keyvault secret for password
+resource "azurerm_key_vault_secret" "vm_admin_password" {
+
+  for_each = var.vms
+  name = "aflal_password"
+  value = each.value.admin_password
+  key_vault_id = azurerm_key_vault.kv.id
+  
 }
 
 
@@ -148,8 +212,8 @@ resource "azurerm_virtual_machine" "vm" {
     
   os_profile {
     computer_name  = each.value.host_name
-    admin_username = data.azurerm_key_vault_secret.vm_admin_username.value
-    admin_password = data.azurerm_key_vault_secret.vm_admin_password.value
+    admin_username = azurerm_key_vault_secret.vm_admin_username.value
+    admin_password = azurerm_key_vault_secret.vm_admin_password.value
   }
 
    os_profile_windows_config {

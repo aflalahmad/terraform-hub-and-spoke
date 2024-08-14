@@ -60,3 +60,9 @@ variable "vms" {
     error_message = "At least one virtual machine must be defined."
   }
 }
+
+variable "keyvault_name" {
+  type        = string
+  description = "Name of the Azure Key Vault."
+}
+
