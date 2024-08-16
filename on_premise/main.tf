@@ -1,3 +1,6 @@
+data "azurerm_client_config" "current" {}
+data "azuread_client_config" "current" {}
+
 #create a resource group
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
@@ -59,7 +62,7 @@ resource "azurerm_virtual_network_gateway" "onprem_vnetgateway" {
     depends_on = [ azurerm_subnet.subnets ]
   
 }
-/*
+
 data "azurerm_public_ip" "hub_publicip" {
   name = "gateway-public-ip"
   resource_group_name = "HubRG"
@@ -87,7 +90,7 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
      name = "onprem-vpn-connection"
      location = azurerm_resource_group.rg.location
      resource_group_name = azurerm_resource_group.rg.name
-     virtual_network_gateway_id = azurerm_virtual_network_gateway.onprem_vnetgateway[each.key].id
+     virtual_network_gateway_id = azurerm_virtual_network_gateway.onprem_vnetgateway.id
      local_network_gateway_id = azurerm_local_network_gateway.onprem_local_network_gateway.id
      type = "IPsec"
      connection_protocol = "IKEv2"
@@ -111,22 +114,6 @@ resource "azurerm_key_vault" "kv" {
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azuread_client_config.current.object_id
-    
-    certificate_permissions = [
-      "get",
-      "list",
-      "delete",
-      "create",
-      "import",
-      "update",
-      "managecontacts",
-      "getissuers",
-      "listissuers",
-      "setissuers",
-      "deleteissuers",
-      "manageissuers",
-    ]
-
     secret_permissions = [
     "Backup",
     "Delete",
@@ -137,14 +124,6 @@ resource "azurerm_key_vault" "kv" {
     "Restore",
     "Set",
   ]
-
-    key_permissions = [
-      "get",
-      "list",
-      "create",
-      "update",
-      "delete",
-    ]
   }
   
 }
@@ -152,9 +131,9 @@ resource "azurerm_key_vault" "kv" {
 #keyvault secret for username
 resource "azurerm_key_vault_secret" "vm_admin_username" {
 
-  for_each = var.vms
-  name = "aflal_username"
-  value = each.value.admin_username
+  
+  name = "aflalahusername"
+  value = var.admin_username
   key_vault_id = azurerm_key_vault.kv.id
   
 }
@@ -162,9 +141,8 @@ resource "azurerm_key_vault_secret" "vm_admin_username" {
 #keyvault secret for password
 resource "azurerm_key_vault_secret" "vm_admin_password" {
 
-  for_each = var.vms
-  name = "aflal_password"
-  value = each.value.admin_password
+  name = "aflalahpassword"
+  value = var.admin_password
   key_vault_id = azurerm_key_vault.kv.id
   
 }
@@ -229,7 +207,7 @@ resource "azurerm_virtual_machine" "vm" {
   }
   
 }
-*/
+
 #create a route table
 resource "azurerm_route_table" "spoke1-udr" {
 

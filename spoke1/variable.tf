@@ -10,18 +10,14 @@ variable "rg" {
   description = "Specifies the resource group details."
 }
 
-variable "vnets" {
-  type        = map(object({
-    vnet_name = strings
-    address_space = string
-  }))
-  description = "Map of virtual network details."
-  validation {
-    condition     = length(keys(var.vnets)) > 0
-    error_message = "At least one virtual network must be defined."
-  }
+variable "vnet_name" {
+  type = string
+  
 }
-
+variable "address_space" {
+  type = string
+  
+}
 variable "subnets" {
   type        = map(object({
     name             = string
@@ -96,11 +92,3 @@ variable "vm1" {
   
 }
 
-variable "vnet_peerings" {
-  type        = map(object({
-    allow_forwarded_traffic      = bool
-    allow_gateway_transit        = bool
-    allow_virtual_network_access = bool
-  }))
-  description = "Map of VNet peering settings."
-}

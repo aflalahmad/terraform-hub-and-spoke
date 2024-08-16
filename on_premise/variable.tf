@@ -49,8 +49,6 @@ variable "vms" {
     host_name        = string
     disk_name        = string
     vm_size          = string
-    admin_username   = string
-    admin_password   = string
     data_disk_size_gb = number
     subnet           = string
   }))
@@ -65,4 +63,9 @@ variable "keyvault_name" {
   type        = string
   description = "Name of the Azure Key Vault."
 }
-
+variable "admin_username" {
+  type = string
+}
+variable "admin_password" {
+  type = string
+}
