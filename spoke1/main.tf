@@ -1,10 +1,7 @@
 
-<<<<<<< HEAD
-=======
 data "azurerm_client_config" "current" {}
 data "azuread_client_config" "current" {}
 
->>>>>>> parent of d66dde6... update
 #resouce group
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
