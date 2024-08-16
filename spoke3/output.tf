@@ -18,6 +18,16 @@ output "app_service_default_hostname" {
   value = azurerm_app_service.app_service.default_site_hostname
 }
 
+output "app_service_outbound_ips" {
+  description = "The outbound IP addresses of the Azure App Service."
+  value = azurerm_app_service.app_service.outbound_ip_addresses
+}
+
+output "app_service_inbound_ips" {
+  description = "The inbound IP addresses of the Azure App Service."
+  value = azurerm_app_service.app_service.inbound_ip_addresses
+}
+
 output "app_service_site_credential" {
   description = "The site credentials of the Azure App Service."
   value = azurerm_app_service.app_service.site_credential

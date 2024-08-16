@@ -1,37 +1,37 @@
 #create resource group
 resource "azurerm_resource_group" "rg" {
-  name     = var.rg.resource_group
-  location = var.rg.location
+    name = var.rg.resource_group
+    location = var.rg.location
 }
 #virtual network
 resource "azurerm_virtual_network" "vnet" {
-  name                = "spoke2_vnet"
+  name = "spoke2_vnet"
   resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  address_space       = ["10.0.0.0/24"]
+  location = azurerm_resource_group.rg.location
+  address_space = ["10.0.0.0/24"]
 }
 #subnets
 resource "azurerm_subnet" "subnets" {
 
-  for_each = var.subnets
+    for_each = var.subnets
 
-  name                 = each.key
-  address_prefixes     = [each.value.address_prefixes]
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  depends_on           = [azurerm_virtual_network.vnet]
+    name = each.value.name
+    address_prefixes = [each.value.address_prefixes]
+    resource_group_name = azurerm_resource_group.rg.name
+    virtual_network_name = azurerm_virtual_network.vnet.name
+    depends_on = [ azurerm_virtual_network.vnet ]
 }
 
 #Network security group
 resource "azurerm_network_security_group" "nsg" {
-  for_each = var.subnets
+     for_each = var.subnets
 
-  name                = each.key
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+     name = each.value.name
+     resource_group_name = azurerm_resource_group.rg.name
+     location = azurerm_resource_group.rg.location
 
-  dynamic "security_rule" {
-    for_each = { for rule in local.rules_csv : rule.name => rule }
+     dynamic "security_rule" {
+        for_each = { for rule in local.rules_csv : rule.name => rule }
     content {
       name                       = security_rule.value.name
       priority                   = security_rule.value.priority
@@ -43,21 +43,22 @@ resource "azurerm_network_security_group" "nsg" {
       source_address_prefix      = security_rule.value.source_address_prefix
       destination_address_prefix = security_rule.value.destination_address_prefix
     }
-  }
+     }
 }
 #nsg association
 resource "azurerm_subnet_network_security_group_association" "nsg-association" {
+      for_each = var.subnets
 
-  subnet_id                 = azurerm_subnet.subnets["spoke2subnet1"].id
-  network_security_group_id = azurerm_network_security_group.nsg["spoke2subnet1"].id
-  depends_on                = [azurerm_network_security_group.nsg, azurerm_subnet.subnets]
+      subnet_id = azurerm_subnet.subnets[each.key].id
+      network_security_group_id = azurerm_network_security_group.nsg[each.key].id
+      depends_on = [ azurerm_network_security_group.nsg,azurerm_subnet.subnets ]
 }
 
 # Create the Public IP for Application Gateway
 resource "azurerm_public_ip" "public_ip" {
   name                = "AppGateway-pip"
   resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+  location = azurerm_resource_group.rg.location
   allocation_method   = "Static"
   sku                 = "Standard"
 }
@@ -66,7 +67,7 @@ resource "azurerm_public_ip" "public_ip" {
 resource "azurerm_application_gateway" "appGW" {
   name                = "App-Gateway"
   resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+  location = azurerm_resource_group.rg.location
   sku {
     name     = "Standard_v2"
     tier     = "Standard_v2"
@@ -75,7 +76,7 @@ resource "azurerm_application_gateway" "appGW" {
 
   gateway_ip_configuration {
     name      = "appgw-ip-config"
-    subnet_id = azurerm_subnet.subnets["App-Gw"].id
+    subnet_id = azurerm_subnet.subnets["AppGw-subnet"].id
   }
 
   frontend_ip_configuration {
@@ -114,98 +115,106 @@ resource "azurerm_application_gateway" "appGW" {
     backend_address_pool_name  = "appgw-backend-pool"
     backend_http_settings_name = "appgw-backend-http-settings"
   }
-  depends_on = [azurerm_resource_group.rg, azurerm_subnet.subnets, azurerm_public_ip.public_ip]
-}
+    depends_on = [azurerm_resource_group.rg ,azurerm_subnet.subnets ,azurerm_public_ip.public_ip]
+ }
 
 #key vault for secret username and password
 data "azurerm_key_vault" "kv" {
-  name                = "Aflalkeyvault7788"
-  resource_group_name = "onprem_RG"
+    name = "Aflalkeyvault7788"
+    resource_group_name = "spoke1RG"
 }
 data "azurerm_key_vault_secret" "vm_admin_username" {
-  name         = "aflalahusername"
-  key_vault_id = data.azurerm_key_vault.kv.id
+     name = "aflal_username"
+     key_vault_id = data.azurerm_key_vault.kv.id
 }
 data "azurerm_key_vault_secret" "vm_admin_password" {
-  name         = "aflalahpassword"
-  key_vault_id = data.azurerm_key_vault.kv.id
+     name = "aflal_password"
+     key_vault_id = data.azurerm_key_vault.kv.id
 }
 
 
 #Virtual machine scale set
 resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
-  name                = var.vmss_name
-  resource_group_name = azurerm_resource_group.rg.name
-  location = azurerm_resource_group.rg.location
-  sku = "Standard_DS1_v2"
-  instances = 2
-  admin_username = data.azurerm_key_vault_secret.vm_admin_username.value
-  admin_password = data.azurerm_key_vault_secret.vm_admin_password.value
-  network_interface {
-    name = "vmss9000"
-    primary = true
-    ip_configuration {
-      name = "internal"
-      subnet_id = azurerm_subnet.subnets["spoke2subnet1"].id
-      application_gateway_backend_address_pool_ids = [local.application_gateway_backend_address_pool_ids[0]]
+  name                 = var.vmss_name
+  resource_group_name  = azurerm_resource_group.rg.name
+  location             = azurerm_resource_group.rg.location
+  sku                  = var.sku
+  instances            = var.instance
+  admin_password       = data.azurerm_key_vault_secret.vm_admin_password.value
+  admin_username       = data.azurerm_key_vault_secret.vm_admin_username.value
+  computer_name_prefix = "vm-"
 
-    }
-  }
-  os_disk {
-    caching = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-  }
   source_image_reference {
     publisher = "MicrosoftWindowsServer"
     offer     = "WindowsServer"
-    sku       = "2019-Datacenter"
+    sku       = "2016-Datacenter-Server-Core"
     version   = "latest"
+  }
+
+  os_disk {
+    storage_account_type = "Standard_LRS"
+    caching              = "ReadWrite"
+  }
+  dynamic "network_interface" {
+    for_each = azurerm_subnet.subnets
+
+    content {
+      name    = "example-${network_interface.key}"
+      primary = network_interface.key == "subnet1"  
+
+      ip_configuration {
+        name      = "internal"
+        primary   = network_interface.key == "subnet1"  
+        subnet_id = network_interface.value.id
+      }
+    }
   }
 }
 
 
 #using data block for Hub vnet
 data "azurerm_virtual_network" "Hub_VNet" {
-  name                = "HubVNet"
+  name = "HubVNet"
   resource_group_name = "HubRG"
 }
 #spoke2 to hub peerings
 resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
+    for_each = var.vnet_peerings
 
-  name                      = "spoke2-to-hub-peering"
-  virtual_network_name      = azurerm_virtual_network.vnet.name
-  remote_virtual_network_id = data.azurerm_virtual_network.Hub_VNet.id
+    name                     = "spoke2-to-hub-peering-${each.key}"  
+    virtual_network_name     = azurerm_virtual_network.vnet.name
+    remote_virtual_network_id = data.azurerm_virtual_network.Hub_VNet.id
 
-  allow_virtual_network_access = true
-  allow_forwarded_traffic      = true
-  allow_gateway_transit        = false
-  use_remote_gateways          = false
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
 
-  resource_group_name = azurerm_resource_group.rg.name
+    resource_group_name = azurerm_resource_group.rg.name
 
-  depends_on = [
-    azurerm_virtual_network.vnet,
-    data.azurerm_virtual_network.Hub_VNet
-  ]
+    depends_on = [
+        azurerm_virtual_network.vnet,
+        data.azurerm_virtual_network.Hub_VNet
+    ]
 }
 
 resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
+    for_each = var.vnet_peerings
 
-  name                         = "hub-to-spoke2-peering"
-  virtual_network_name         = data.azurerm_virtual_network.Hub_VNet.name
-  remote_virtual_network_id    = azurerm_virtual_network.vnet.id
-  allow_virtual_network_access = true
-  allow_forwarded_traffic      = true
-  allow_gateway_transit        = true
-  use_remote_gateways          = false
+    name                     = "hub-to-spoke2-peering-${each.key}" 
+    virtual_network_name     = data.azurerm_virtual_network.Hub_VNet.name
+    remote_virtual_network_id = azurerm_virtual_network.vnet.id
 
-  resource_group_name = data.azurerm_virtual_network.Hub_VNet.resource_group_name
+    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
+    allow_gateway_transit      = each.value.allow_gateway_transit
+    allow_virtual_network_access = each.value.allow_virtual_network_access
 
-  depends_on = [
-    azurerm_virtual_network.vnet,
-    data.azurerm_virtual_network.Hub_VNet
+    resource_group_name = azurerm_resource_group.rg.name
 
-  ]
+    depends_on = [
+        azurerm_virtual_network.vnet,
+        data.azurerm_virtual_network.Hub_VNet
+
+    ]
 }
 
 /*

@@ -5,7 +5,10 @@ output "resource_group_id" {
 
 output "virtual_network_ids" {
   description = "Map of virtual network names to their IDs."
-  value = azurerm_virtual_network.vnets.id
+  value = {
+    for vnet_key, vnet in azurerm_virtual_network.vnets :
+    vnet_key => vnet.id
+  }
 }
 
 output "subnet_ids" {
@@ -54,4 +57,9 @@ output "backup_policy_id" {
 output "storage_account_id" {
   description = "The ID of the Azure Storage Account."
   value = azurerm_storage_account.stgacc.id
+}
+
+output "key_vault_id" {
+  description = "The ID of the Azure Key Vault."
+  value = azurerm_key_vault.kv.id
 }

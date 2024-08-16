@@ -2,9 +2,13 @@ rg = {
     resource_group = "spoke1RG"
     location = "Eastus"
 }
+vnets = {
+     spoke1VNet= {
+        vnet_name = "spoke1VNet"
+        address_space = "10.30.0.0/16"
+    }
+}
 
-vnet_name = "spoke1VNet"
-address_space = "10.30.0.0/16"
 subnets = {
      subnet1 = {
         name = "spokesubnet1",

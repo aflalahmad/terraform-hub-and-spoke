@@ -82,3 +82,12 @@ variable "backuppolicy_name" {
   type        = string
   description = "Name of the backup policy."
 }
+
+variable "vnet_peerings" {
+  type        = map(object({
+    allow_forwarded_traffic      = bool
+    allow_gateway_transit        = bool
+    allow_virtual_network_access = bool
+  }))
+  description = "Map of VNet peering settings."
+}

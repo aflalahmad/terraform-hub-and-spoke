@@ -154,7 +154,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
     }
   }
 }
-
+/*
 #connect to on premise 
  data "azurerm_public_ip" "onprem_publicip" {
    name = "onprem_vnetgatway_publicip"
@@ -190,7 +190,7 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
      depends_on = [ azurerm_virtual_network_gateway.vnetgateway,azurerm_local_network_gateway.hub_local_network_gateway ]
 }
-
+*/
 #create the route table
 
 resource "azurerm_route_table" "route_table" {
