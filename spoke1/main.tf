@@ -244,7 +244,7 @@ resource "azurerm_backup_protected_vm" "backup_protected" {
  
 
 
-/*
+
 #storage account for file share
 resource "azurerm_storage_account" "stgacc" {
     
@@ -269,28 +269,34 @@ resource "azurerm_storage_share" "fileshare" {
 
 }
 
-#fileshare extension
-resource "azurerm_virtual_machine_extension" "file-share-mount" {
-  for_each = var.vms
-  name = "myfilesharemount-${each.key}"
-  virtual_machine_id = azurerm_virtual_machine.vm[each.key].id
-  publisher = "Microsoft.Compute"
-  type = "CustomScriptExtension"
-  type_handler_version = "1.10"
+# Create the mount-fileshare.ps1 PowerShell script
+resource "local_file" "mount_fileshare_script" {
+  filename = "${path.module}/mount-fileshare.ps1" # Path to save the script
 
-  settings = jsonencode({
-    "commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -File ${path.module}/mount-fileshare.ps1 -storageAccountName ${azurerm_storage_account.stgacc.name} -storageAccountKey ${azurerm_storage_account.stgacc.primary_access_key} -fileShareName ${azurerm_storage_share.fileshare.name} -mountPoint 'Z:'"
-  })
+  content = <<-EOF
+  \$storageAccountName = "${azurerm_storage_account.stgacc.name}"
+  \$shareName = "${azurerm_storage_share.fileshare.name}"
+  \$storageAccountKey = "${azurerm_storage_account.stgacc.primary_access_key}"
 
-  protected_settings = jsonencode({
-    "storageAccountName" = azurerm_storage_account.stgacc.name
-    "storageAccountKey"  = azurerm_storage_account.stgacc.primary_access_key
-  })
+  # Mount point for the file share
+  \$mountPoint = "Z:"
 
-  depends_on = [azurerm_virtual_machine.vm]
+  # Create the credential object
+  \$user = "\$storageAccountName"
+  \$pass = ConvertTo-SecureString -String "\$storageAccountKey" -AsPlainText -Force
+  \$credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList \$user, \$pass
+
+  # Mount the file share
+  New-PSDrive -Name \$mountPoint.Substring(0, 1) -PSProvider FileSystem -Root "\\\\\$storageAccountName.file.core.windows.net\\\$shareName" -Credential \$credential -Persist
+
+  # Ensure the drive is mounted at startup
+  \$script = "New-PSDrive -Name \$(\$mountPoint.Substring(0, 1)) -PSProvider FileSystem -Root '\\\\\$storageAccountName.file.core.windows.net\\\$shareName' -Credential (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList \$user, \$pass) -Persist"
+  \$scriptBlock = [scriptblock]::Create(\$script)
+  Set-Content -Path C:\\mount-fileshare.ps1 -Value \$scriptBlock
+  EOF
 }
 
-*/
+
 
 /*
 # create private dns zone

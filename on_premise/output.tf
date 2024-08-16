@@ -11,7 +11,7 @@ output "virtual_network_id" {
 output "subnet_ids" {
   description = "Map of subnet names to their IDs in the on-premises virtual network."
   value = {
-    for subnet_name, subnet in azurerm_subnet.onprem_vnetgateway_subnet :
+    for subnet_name, subnet in azurerm_subnet.subnets  :
     subnet_name => subnet.id
   }
 }
@@ -23,12 +23,9 @@ output "public_ip_id" {
 
 output "virtual_network_gateway_ids" {
   description = "Map of subnet names to their IDs for on-premises virtual network gateways."
-  value = {
-    for subnet_name, gateway in azurerm_virtual_network_gateway.onprem_vnetgateway :
-    subnet_name => gateway.id
-  }
+  value = azurerm_virtual_network_gateway.onprem_vnetgateway.id
 }
-
+/*
 output "local_network_gateway_id" {
   description = "The ID of the local network gateway for on-premises connections."
   value = azurerm_local_network_gateway.onprem_local_network_gateway.id
@@ -41,3 +38,4 @@ output "vpn_connection_ids" {
     subnet_name => connection.id
   }
 }
+*/

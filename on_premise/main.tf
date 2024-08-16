@@ -41,7 +41,6 @@ resource "azurerm_public_ip" "onprem_vnetgateway_pip" {
 
 #virtual network gateway
 resource "azurerm_virtual_network_gateway" "onprem_vnetgateway" {
-    for_each = var.subnet_details
     name = "onprem-vnet-gateway"
     resource_group_name = azurerm_resource_group.rg.name
     location = azurerm_resource_group.rg.location
@@ -55,12 +54,12 @@ resource "azurerm_virtual_network_gateway" "onprem_vnetgateway" {
       name = "vnetgatewayconfiguration"
       public_ip_address_id = azurerm_public_ip.onprem_vnetgateway_pip.id
       private_ip_address_allocation = "Dynamic"
-      subnet_id = azurerm_subnet.onprem_vnetgateway_subnet[each.key].id
+      subnet_id = azurerm_subnet.subnets["GatewaySubnet"].id
     }
-    depends_on = [ azurerm_subnet.onprem_vnetgateway_subnet ]
+    depends_on = [ azurerm_subnet.subnets ]
   
 }
-
+/*
 data "azurerm_public_ip" "hub_publicip" {
   name = "gateway-public-ip"
   resource_group_name = "HubRG"
@@ -230,7 +229,7 @@ resource "azurerm_virtual_machine" "vm" {
   }
   
 }
-
+*/
 #create a route table
 resource "azurerm_route_table" "spoke1-udr" {
 

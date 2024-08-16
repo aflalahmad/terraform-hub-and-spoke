@@ -41,7 +41,7 @@ output "firewall_id" {
 }
 
 
-
+/*
 output "local_network_gateway_id" {
   description = "The ID of the local network gateway for on-premises connections."
   value = azurerm_local_network_gateway.hub_local_network_gateway.id
@@ -51,3 +51,4 @@ output "vpn_connection_id" {
   description = "The ID of the VPN connection to on-premises network."
   value = azurerm_virtual_network_gateway_connection.onprem_vpn_connection.id
 }
+*/
