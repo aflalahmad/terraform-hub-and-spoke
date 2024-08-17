@@ -1,66 +1,63 @@
-# Onpremise resource group
+# On-Premises Resource Group 🏢
+This resource group includes virtual networks (VNets) with subnets, network security groups (NSGs), a virtual network gateway, VPN connection, and virtual network integration. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
 
-This resource groups including virtual networks (VNets) with subnets and network security groups (NSGs) adn virtual network gateway,vpn connection and virtual network integration etc.. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
-## Prerequisites
+## Prerequisites ⚙️
+### Before running this Terraform configuration, ensure you have the following prerequisites:
 
-Before running this Terraform configuration, ensure you have the following prerequisites:
-- Terraform installed on your local machine.
-- Azure CLI installed and authenticated.
-- Proper access permissions to create resources in the Azure subscription.
+- Terraform installed on your local machine. 🛠️
+- Azure CLI installed and authenticated. 🔑
+- Proper access permissions to create resources in the Azure subscription. ✅
+## Configuration Details 📝
+### Integration with On-Premises Network 🔗
+1. Create the Resource Group 🗂️
+- Set up a resource group for the on-premises integration to house all related resources.
 
-## Configuration details
-## Integration with On-Premises Network
-- Create the Resource Group
+2. Create the Virtual Network 🌐
+- Define a virtual network for the on-premises environment, specifying the address space and other configurations.
 
- Set up a resource group for the on-premises integration to house all related resources.
-- Create the Virtual Network
+3. Create Subnets 🧩
+- Segment the virtual network into smaller subnets, each with its own address prefix.
 
- Define a virtual network for the on-premises environment, specifying the address space and other configurations.
-- Create Subnets
+4. Create Public IP 🌍
+- Allocate a public IP address for the on-premises VPN gateway.
 
-Segment the virtual network into smaller subnets, each with its own address prefix.
-- Create Public IP
+5. Create a Virtual Network Gateway 🔗
+- Establish a virtual network gateway for the on-premises environment to enable site-to-site VPN connections between on-premises and Azure.
 
-Allocate a public IP address for the on-premises VPN gateway.
-- Create a Virtual Network Gateway
+6. Create a Local Network Gateway 🌐
+- Set up a local network gateway in Azure to represent the on-premises VPN device. Specify the public IP address of the on-premises VPN device and the address space used in the on-premises network.
 
-Establish a virtual network gateway for the on-premises environment to enable site-to-site VPN connections between on-premises and Azure.
-- Create a Local Network Gateway
+7. Create a VPN Connection 🔗
+- Establish a VPN connection between the Azure virtual network gateway and the on-premises local network gateway. Configure the connection type (IPsec) and the shared key for authentication.
 
-Set up a local network gateway in Azure to represent the on-premises VPN device.
-Specify the public IP address of the on-premises VPN device and the address space used in the on-premises network.
-- Create a VPN Connection
+8. Create Network Interface Card (NIC) 💻
+- Create a network interface card for each virtual machine in the on-premises network.
 
-Establish a VPN connection between the Azure virtual network gateway and the on-premises local network gateway.
-Configure the connection type (IPsec) and the shared key for authentication.
+9. Create Virtual Machines 🖥️
+- Deploy virtual machines in the on-premises network with appropriate configurations.
 
-- Create Network Interface Card (NIC)
+10. Set Up Route Table for Traffic Routing 🗺️
+- Create a route table to manage traffic routing between the on-premises network and the hub. Define routes to direct traffic through the VPN gateway.
 
-Create a network interface card for each virtual machine in the on-premises network.
-- Create Virtual Machines
-
-Deploy virtual machines in the on-premises network with appropriate configurations.
-- Set Up Route Table for Traffic Routing
-
-Create a route table to manage traffic routing between the on-premises network and the hub.
-Define routes to direct traffic through the VPN gateway.
-- Associate Route Table with Subnets
-
-Associate the route table with the subnets to enforce the routing rules and ensure proper traffic flow between on-premises and Azure.
-
+11. Associate Route Table with Subnets 🔗
+- Associate the route table with the subnets to enforce the routing rules and ensure proper traffic flow between on-premises and Azure.
 
 
 # Diagram
 ![onprem](/home/aflalahmad/terraform-hub-and-spoke/Images/onprem.png)
 
-###### Apply the Terraform configurations :
+### Apply the Terraform configurations :
 Deploy the resources using Terraform,
+- Initialize Terraform 🔄:
 ```
 terraform init
 ```
+- Plan the Deployment 📝:
+
 ```
 terraform plan "--var-file=variables.tfvars"
 ```
+- Apply the Configuration ✅:
 ```
 terraform apply "--var-file=variables.tfvars"
 ```
