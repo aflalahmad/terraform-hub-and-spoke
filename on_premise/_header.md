@@ -51,7 +51,7 @@ Associate the route table with the subnets to enforce the routing rules and ensu
 
 
 # Diagram
-![onprem](Images/onprem.png)
+![onprem](/home/aflalahmad/terraform-hub-and-spoke/Images/onprem.png)
 
 ###### Apply the Terraform configurations :
 Deploy the resources using Terraform,
