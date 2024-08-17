@@ -1,65 +1,63 @@
 <!-- BEGIN_TF_DOCS -->
-# Onpremise resource group
+# On-Premises Resource Group 🏢
+This resource group includes virtual networks (VNets) with subnets, network security groups (NSGs), a virtual network gateway, VPN connection, and virtual network integration. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
 
-This resource groups including virtual networks (VNets) with subnets and network security groups (NSGs) adn virtual network gateway,vpn connection and virtual network integration etc.. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
-## Prerequisites
+## Prerequisites ⚙️
+### Before running this Terraform configuration, ensure you have the following prerequisites:
 
-Before running this Terraform configuration, ensure you have the following prerequisites:
-- Terraform installed on your local machine.
-- Azure CLI installed and authenticated.
-- Proper access permissions to create resources in the Azure subscription.
+- Terraform installed on your local machine. 🛠️
+- Azure CLI installed and authenticated. 🔑
+- Proper access permissions to create resources in the Azure subscription. ✅
+## Configuration Details 📝
+### Integration with On-Premises Network 🔗
+1. Create the Resource Group 🗂️
+- Set up a resource group for the on-premises integration to house all related resources.
 
-## Configuration details
-## Integration with On-Premises Network
-- Create the Resource Group
+2. Create the Virtual Network 🌐
+- Define a virtual network for the on-premises environment, specifying the address space and other configurations.
 
- Set up a resource group for the on-premises integration to house all related resources.
-- Create the Virtual Network
+3. Create Subnets 🧩
+- Segment the virtual network into smaller subnets, each with its own address prefix.
 
- Define a virtual network for the on-premises environment, specifying the address space and other configurations.
-- Create Subnets
+4. Create Public IP 🌍
+- Allocate a public IP address for the on-premises VPN gateway.
 
-Segment the virtual network into smaller subnets, each with its own address prefix.
-- Create Public IP
+5. Create a Virtual Network Gateway 🔗
+- Establish a virtual network gateway for the on-premises environment to enable site-to-site VPN connections between on-premises and Azure.
 
-Allocate a public IP address for the on-premises VPN gateway.
-- Create a Virtual Network Gateway
+6. Create a Local Network Gateway 🌐
+- Set up a local network gateway in Azure to represent the on-premises VPN device. Specify the public IP address of the on-premises VPN device and the address space used in the on-premises network.
 
-Establish a virtual network gateway for the on-premises environment to enable site-to-site VPN connections between on-premises and Azure.
-- Create a Local Network Gateway
+7. Create a VPN Connection 🔗
+- Establish a VPN connection between the Azure virtual network gateway and the on-premises local network gateway. Configure the connection type (IPsec) and the shared key for authentication.
 
-Set up a local network gateway in Azure to represent the on-premises VPN device.
-Specify the public IP address of the on-premises VPN device and the address space used in the on-premises network.
-- Create a VPN Connection
+8. Create Network Interface Card (NIC) 💻
+- Create a network interface card for each virtual machine in the on-premises network.
 
-Establish a VPN connection between the Azure virtual network gateway and the on-premises local network gateway.
-Configure the connection type (IPsec) and the shared key for authentication.
+9. Create Virtual Machines 🖥️
+- Deploy virtual machines in the on-premises network with appropriate configurations.
 
-- Create Network Interface Card (NIC)
+10. Set Up Route Table for Traffic Routing 🗺️
+- Create a route table to manage traffic routing between the on-premises network and the hub. Define routes to direct traffic through the VPN gateway.
 
-Create a network interface card for each virtual machine in the on-premises network.
-- Create Virtual Machines
-
-Deploy virtual machines in the on-premises network with appropriate configurations.
-- Set Up Route Table for Traffic Routing
-
-Create a route table to manage traffic routing between the on-premises network and the hub.
-Define routes to direct traffic through the VPN gateway.
-- Associate Route Table with Subnets
-
-Associate the route table with the subnets to enforce the routing rules and ensure proper traffic flow between on-premises and Azure.
+11. Associate Route Table with Subnets 🔗
+- Associate the route table with the subnets to enforce the routing rules and ensure proper traffic flow between on-premises and Azure.
 
 # Diagram
-![onprem](Images/onprem.png)
+![onprem](/home/aflalahmad/terraform-hub-and-spoke/Images/onprem.png)
 
-###### Apply the Terraform configurations :
+### Apply the Terraform configurations :
 Deploy the resources using Terraform,
+- Initialize Terraform 🔄:
 ```
 terraform init
 ```
+- Plan the Deployment 📝:
+
 ```
 terraform plan "--var-file=variables.tfvars"
 ```
+- Apply the Configuration ✅:
 ```
 terraform apply "--var-file=variables.tfvars"
 ```
@@ -108,7 +106,6 @@ resource "azurerm_public_ip" "onprem_vnetgateway_pip" {
 
 #virtual network gateway
 resource "azurerm_virtual_network_gateway" "onprem_vnetgateway" {
-    for_each = var.subnet_details
     name = "onprem-vnet-gateway"
     resource_group_name = azurerm_resource_group.rg.name
     location = azurerm_resource_group.rg.location
@@ -122,12 +119,12 @@ resource "azurerm_virtual_network_gateway" "onprem_vnetgateway" {
       name = "vnetgatewayconfiguration"
       public_ip_address_id = azurerm_public_ip.onprem_vnetgateway_pip.id
       private_ip_address_allocation = "Dynamic"
-      subnet_id = azurerm_subnet.onprem_vnetgateway_subnet[each.key].id
+      subnet_id = azurerm_subnet.subnets["GatewaySubnet"].id
     }
-    depends_on = [ azurerm_subnet.onprem_vnetgateway_subnet ]
+    depends_on = [ azurerm_subnet.subnets ]
   
 }
-
+/*
 data "azurerm_public_ip" "hub_publicip" {
   name = "gateway-public-ip"
   resource_group_name = "HubRG"
@@ -297,7 +294,7 @@ resource "azurerm_virtual_machine" "vm" {
   }
   
 }
-
+*/
 #create a route table
 resource "azurerm_route_table" "spoke1-udr" {
 
@@ -341,22 +338,13 @@ The following providers are used by this module:
 
 The following resources are used by this module:
 
-- [azurerm_key_vault.kv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault) (resource)
-- [azurerm_key_vault_secret.vm_admin_password](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
-- [azurerm_key_vault_secret.vm_admin_username](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
-- [azurerm_local_network_gateway.onprem_local_network_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/local_network_gateway) (resource)
-- [azurerm_network_interface.nic](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface) (resource)
 - [azurerm_public_ip.onprem_vnetgateway_pip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_route_table.spoke1-udr](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
 - [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_route_table_association.routetable--ass](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
-- [azurerm_virtual_machine.vm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine) (resource)
 - [azurerm_virtual_network.onprem_vnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azurerm_virtual_network_gateway.onprem_vnetgateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway) (resource)
-- [azurerm_virtual_network_gateway_connection.onprem_vpn_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway_connection) (resource)
-- [azurerm_public_ip.hub_publicip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/public_ip) (data source)
-- [azurerm_virtual_network.hub_vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -439,20 +427,6 @@ Description: Name of the virtual network.
 
 Type: `string`
 
-### <a name="input_vnet_peerings"></a> [vnet\_peerings](#input\_vnet\_peerings)
-
-Description: Map of VNet peering settings.
-
-Type:
-
-```hcl
-map(object({
-    allow_forwarded_traffic      = bool
-    allow_gateway_transit        = bool
-    allow_virtual_network_access = bool
-  }))
-```
-
 ## Optional Inputs
 
 No optional inputs.
@@ -460,10 +434,6 @@ No optional inputs.
 ## Outputs
 
 The following outputs are exported:
-
-### <a name="output_local_network_gateway_id"></a> [local\_network\_gateway\_id](#output\_local\_network\_gateway\_id)
-
-Description: The ID of the local network gateway for on-premises connections.
 
 ### <a name="output_public_ip_id"></a> [public\_ip\_id](#output\_public\_ip\_id)
 
@@ -484,10 +454,6 @@ Description: Map of subnet names to their IDs for on-premises virtual network ga
 ### <a name="output_virtual_network_id"></a> [virtual\_network\_id](#output\_virtual\_network\_id)
 
 Description: The ID of the on-premises virtual network.
-
-### <a name="output_vpn_connection_ids"></a> [vpn\_connection\_ids](#output\_vpn\_connection\_ids)
-
-Description: Map of subnet names to their IDs for VPN connections to on-premises network.
 
 ## Modules
 
