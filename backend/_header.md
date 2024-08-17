@@ -24,18 +24,18 @@ Next, a Storage Account is created within the Resource Group. This account is co
 A private container is created within the Storage Account to store Terraform state files securely.
 
 
-###### Apply the Terraform configurations :
+### Apply the Terraform configurations :
 Deploy the resources using Terraform,
-- 1.Initialize Terraform 🔄:
+- Initialize Terraform 🔄:
 ```
 terraform init
 ```
-- 2.Plan the Deployment 📝:
+- Plan the Deployment 📝:
 
 ```
 terraform plan "--var-file=variables.tfvars"
 ```
-- 3.Apply the Configuration ✅:
+- Apply the Configuration ✅:
 ```
 terraform apply "--var-file=variables.tfvars"
 ```
