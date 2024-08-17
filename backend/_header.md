@@ -12,15 +12,15 @@ Before running this Terraform configuration, ensure you have the following prere
 - Proper access permissions to create resources in the Azure subscription. ✅
 ## Configuration Details 📝
 ### 1. Resource Group 🗂️
-- 🛠️ Create Resource Group
+- 🛠️ Create Resource Group:
 The configuration starts by creating a Resource Group in Azure, which will contain all other resources.
 
-- 2. Storage Account 💾
-🛠️ Create Storage Account
+###  2. Storage Account 💾
+- 🛠️ Create Storage Account:
 Next, a Storage Account is created within the Resource Group. This account is configured with the Standard performance tier and locally redundant storage (LRS).
 
-- 3. Storage Container 📦
-🛠️ Create Storage Container
+### 3. Storage Container 📦
+- 🛠️ Create Storage Container:
 A private container is created within the Storage Account to store Terraform state files securely.
 
 
