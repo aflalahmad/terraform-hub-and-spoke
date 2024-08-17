@@ -62,7 +62,7 @@
 - Link the route table to the appropriate subnets within the hub virtual network to enforce the routing rules.
 
 # Diagram
-![hub](/home/aflalahmad/terraform-hub-and-spoke/Images/hub.png)
+![On\_Premises](Images/hub.png)
 
 ### Apply the Terraform configurations :
 Deploy the resources using Terraform,
@@ -73,11 +73,11 @@ terraform init
 - Plan the Deployment 📝:
 
 ```
-terraform plan "--var-file=variables.tfvars"
+terraform plan
 ```
 - Apply the Configuration ✅:
 ```
-terraform apply "--var-file=variables.tfvars"
+terraform apply
 ```
 
 ```hcl
