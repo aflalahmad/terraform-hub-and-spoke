@@ -20,13 +20,14 @@ variable "appservice_name" {
   description = "Name of the App Service."
 }
 
-variable "vnet_details" {
-  type = map(object({
-    vnet_name = string
-    address_space = string
-  }))
-  description = "The details of the VNET"
+variable "vnet_name" {
+  type        = string
+  description = "Name of the virtual network."
 }
+variable "address_space" {
+  type        = string
+}
+
 
 variable "subnet_details" {
   type        = map(object({

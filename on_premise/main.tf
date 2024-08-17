@@ -1,3 +1,7 @@
+
+data "azurerm_client_config" "current" {}
+data "azuread_client_config" "current" {}
+
 #create a resource group
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
@@ -112,20 +116,6 @@ resource "azurerm_key_vault" "kv" {
     tenant_id = data.azurerm_client_config.current.tenant_id
     object_id = data.azuread_client_config.current.object_id
     
-    certificate_permissions = [
-      "get",
-      "list",
-      "delete",
-      "create",
-      "import",
-      "update",
-      "managecontacts",
-      "getissuers",
-      "listissuers",
-      "setissuers",
-      "deleteissuers",
-      "manageissuers",
-    ]
 
     secret_permissions = [
     "Backup",
@@ -152,9 +142,8 @@ resource "azurerm_key_vault" "kv" {
 #keyvault secret for username
 resource "azurerm_key_vault_secret" "vm_admin_username" {
 
-  for_each = var.vms
   name = "aflal_username"
-  value = each.value.admin_username
+  value = var.admin_username
   key_vault_id = azurerm_key_vault.kv.id
   
 }
@@ -162,9 +151,8 @@ resource "azurerm_key_vault_secret" "vm_admin_username" {
 #keyvault secret for password
 resource "azurerm_key_vault_secret" "vm_admin_password" {
 
-  for_each = var.vms
   name = "aflal_password"
-  value = each.value.admin_password
+  value = var.admin_password
   key_vault_id = azurerm_key_vault.kv.id
   
 }

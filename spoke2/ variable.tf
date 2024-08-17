@@ -15,6 +15,7 @@ variable "vnet_name" {
   description = "Name of the virtual network."
 }
 
+
 variable "subnets" {
   type        = map(object({
     name             = string
@@ -53,15 +54,6 @@ variable "vmss_name" {
   description = "Name of the Virtual Machine Scale Set (VMSS)."
 }
 
-variable "admin_username" {
-  type        = string
-  description = "Admin username for virtual machines."
-}
-
-variable "admin_password" {
-  type        = string
-  description = "Admin password for virtual machines."
-}
 
 variable "sku" {
   type        = string
@@ -83,11 +75,3 @@ variable "backuppolicy_name" {
   description = "Name of the backup policy."
 }
 
-variable "vnet_peerings" {
-  type        = map(object({
-    allow_forwarded_traffic      = bool
-    allow_gateway_transit        = bool
-    allow_virtual_network_access = bool
-  }))
-  description = "Map of VNet peering settings."
-}

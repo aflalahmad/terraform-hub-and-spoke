@@ -65,4 +65,9 @@ variable "keyvault_name" {
   type        = string
   description = "Name of the Azure Key Vault."
 }
-
+variable "admin_username" {
+  type = string
+}
+variable "admin_password" {
+  type = string
+}
