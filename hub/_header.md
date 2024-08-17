@@ -1,4 +1,5 @@
-# hub Resource Group
+# Hub Resource Group 🌐
+
 ## Centralized Services and Networking Overview 🌐
 - The Hub Resource Group contains resources that provide centralized services and networking for the entire infrastructure, acting as a central point for connectivity and security management.
 

@@ -1,109 +1,112 @@
 <!-- BEGIN_TF_DOCS -->
-# Spoke1 Resource Group
+# Spoke1 Resource Group 🏢
+This Resource Group includes virtual networks (VNets) with subnets, network security groups (NSGs), and additional resources. The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
 
-This Resource Group  including virtual networks (VNets) with subnets and network security groups (NSGs). The configuration is designed to be dynamic, allowing for scalable and customizable deployments.
+## Prerequisites ⚙️
+### Before running this Terraform configuration, ensure you have the following prerequisites:
 
-## Prerequisites
-
-Before running this Terraform configuration, ensure you have the following prerequisites:
-- Terraform installed on your local machine.
-- Azure CLI installed and authenticated.
-- Proper access permissions to create resources in the Azure subscription.
-## Configuration details
-## Data Sources
-1. data "azurerm\_client\_config" "current" {}
-
+- Terraform installed on your local machine. 🛠️
+- Azure CLI installed and authenticated. 🔑
+- Proper access permissions to create resources in the Azure subscription. ✅
+## Configuration Details 📝
+### Data Sources 🔍
+1. data "azurerm\_client\_config" "current"
 - Retrieves the Azure credentials for the current subscription.
-2. data "azuread\_client\_config" "current" {}
 
+2. data "azuread\_client\_config" "current"
 - Retrieves the Azure AD credentials for the current subscription.
-## Resource Group
-3. resource "azurerm\_resource\_group" "rg" {}
+
+### Resource Group 🗂️
+3. resource "azurerm\_resource\_group" "rg"
 - Creates an Azure Resource Group to organize and manage Azure resources.
-## Virtual Network
-4. resource "azurerm\_virtual\_network" "vnets" {}
+Virtual Network 🌐
+4. resource "azurerm\_virtual\_network" "vnets"
 - Defines a Virtual Network (VNet) with specified address space and location, using the previously created Resource Group.
-## Subnets
-5. resource "azurerm\_subnet" "subnets" {}
+Subnets 🧩
+5. resource "azurerm\_subnet" "subnets"
 - Creates Subnets within the VNet, specifying address prefixes and associating them with the VNet.
-## Network Security Group (NSG)
-6. resource "azurerm\_network\_security\_group" "nsg" {}
+Network Security Group (NSG) 🔒
+6. resource "azurerm\_network\_security\_group" "nsg"
 - Defines a Network Security Group (NSG) with security rules. Rules are dynamically created based on local variables.
-## NSG Association
-7. resource "azurerm\_subnet\_network\_security\_group\_association" "nsg-association" {}
+NSG Association 🔗
+7. resource "azurerm\_subnet\_network\_security\_group\_association" "nsg-association"
 - Associates the NSG with the created subnets to enforce the security rules.
-## Network Interface Card (NIC)
-8. resource "azurerm\_network\_interface" "nic" {}
+Network Interface Card (NIC) 💻
+8. resource "azurerm\_network\_interface" "nic"
 - Creates Network Interface Cards (NICs) for virtual machines, attaching them to the specified subnets.
-## Virtual Machines (VMs)
-9. resource "azurerm\_virtual\_machine" "vm" {}
+Virtual Machines (VMs) 🖥️
+9. resource "azurerm\_virtual\_machine" "vm"
 - Deploys Virtual Machines using the defined NICs, with specified configurations for size, storage, and OS profile.
-## Recovery Services Vault
-10. resource "azurerm\_recovery\_services\_vault" "rsv" {}
-
+Recovery Services Vault 🛡️
+10. resource "azurerm\_recovery\_services\_vault" "rsv"
 - Creates a Recovery Services Vault for backing up VMs.
-11. resource "azurerm\_backup\_policy\_vm" "backup\_policy" {}
 
+11. resource "azurerm\_backup\_policy\_vm" "backup\_policy"
 - Defines a backup policy for the VMs with schedules and retention rules.
-12. resource "azurerm\_backup\_protected\_vm" "backup\_protected" {}
 
+12. resource "azurerm\_backup\_protected\_vm" "backup\_protected"
 - Associates VMs with the backup policy to enable backup.
-## Key Vault
-13. resource "azurerm\_key\_vault" "kv" {}
 
+### Key Vault 🔑
+13. resource "azurerm\_key\_vault" "kv"
 - Creates an Azure Key Vault for storing secrets such as VM admin usernames and passwords.
-14. resource "azurerm\_key\_vault\_secret" "vm\_admin\_username" {}
 
+14. resource "azurerm\_key\_vault\_secret" "vm\_admin\_username"
 - Stores VM admin usernames in the Key Vault.
-15. resource "azurerm\_key\_vault\_secret" "vm\_admin\_password" {}
 
+15. resource "azurerm\_key\_vault\_secret" "vm\_admin\_password"
 - Stores VM admin passwords in the Key Vault.
-## Storage Account
-16. resource "azurerm\_storage\_account" "stgacc" {}
+
+### Storage Account 📦
+16. resource "azurerm\_storage\_account" "stgacc"
 - Creates an Azure Storage Account for storing data.
-Optional Resources
-17. resource "azurerm\_storage\_share" "fileshare" {}
+Optional Resources 🛠️
+17. resource "azurerm\_storage\_share" "fileshare"
+- Defines a file share within the Storage Account.
 
-  - Defines a file share within the Storage Account.
-18. resource "azurerm\_virtual\_machine\_extension" "file-share-mount" {}
+18. resource "azurerm\_virtual\_machine\_extension" "file-share-mount"
+- Uses a custom script to mount the file share on VMs.
 
--  Uses a custom script to mount the file share on VMs.
-19.  resource "azurerm\_route\_table" "spoke1-udr" {}
- - Defines a route table for traffic routing between spokes through a firewall.
-20.  resource "azurerm\_subnet\_route\_table\_association" "spoke1udr\_subnet\_association" {}
+19. resource "azurerm\_route\_table" "spoke1-udr"
+- Defines a route table for traffic routing between spokes through a firewall.
 
+20. resource "azurerm\_subnet\_route\_table\_association" "spoke1udr\_subnet\_association"
 - Associates the route table with subnets.
-21.   resource "azurerm\_log\_analytics\_workspace" "log\_analytics" {}
 
+21. resource "azurerm\_log\_analytics\_workspace" "log\_analytics"
 - Creates a Log Analytics Workspace for monitoring and analytics.
-22.  resource "azurerm\_network\_watcher" "network\_watcher" {}
 
--  Ensures a Network Watcher exists for network monitoring.
-23.  resource "azurerm\_network\_watcher\_flow\_log" "nsg\_flow\_log" {}
+22. resource "azurerm\_network\_watcher" "network\_watcher"
+- Ensures a Network Watcher exists for network monitoring.
 
- - Enables NSG flow logs for network traffic analysis.
-24.  resource "azurerm\_monitor\_diagnostic\_setting" "vnet\_diagnostics" {}
+23. resource "azurerm\_network\_watcher\_flow\_log" "nsg\_flow\_log"
+- Enables NSG flow logs for network traffic analysis.
 
+24. resource "azurerm\_monitor\_diagnostic\_setting" "vnet\_diagnostics"
 - Configures diagnostic settings for VNets to send logs to Log Analytics.
-25.  resource "azurerm\_policy\_definition" "diagnostics\_policy" {}
 
- - Defines a custom Azure Policy to ensure diagnostics logs are enabled for resources.
-26.  resource "azurerm\_policy\_assignment" "assign\_policy" {}
+25. resource "azurerm\_policy\_definition" "diagnostics\_policy"
+- Defines a custom Azure Policy to ensure diagnostics logs are enabled for resources.
 
+26. resource "azurerm\_policy\_assignment" "assign\_policy"
 - Assigns the diagnostics policy to a resource group.
 
 # Diagram
 
 ![spoke1](Images/spoke1.png)
 
-###### Apply the Terraform configurations :
+### Apply the Terraform configurations :
 Deploy the resources using Terraform,
+- Initialize Terraform 🔄:
 ```
 terraform init
 ```
+- Plan the Deployment 📝:
+
 ```
 terraform plan "--var-file=variables.tfvars"
 ```
+- Apply the Configuration ✅:
 ```
 terraform apply "--var-file=variables.tfvars"
 ```
@@ -355,7 +358,7 @@ resource "azurerm_backup_protected_vm" "backup_protected" {
  
 
 
-/*
+
 #storage account for file share
 resource "azurerm_storage_account" "stgacc" {
     
@@ -380,28 +383,34 @@ resource "azurerm_storage_share" "fileshare" {
 
 }
 
-#fileshare extension
-resource "azurerm_virtual_machine_extension" "file-share-mount" {
-  for_each = var.vms
-  name = "myfilesharemount-${each.key}"
-  virtual_machine_id = azurerm_virtual_machine.vm[each.key].id
-  publisher = "Microsoft.Compute"
-  type = "CustomScriptExtension"
-  type_handler_version = "1.10"
+# Create the mount-fileshare.ps1 PowerShell script
+resource "local_file" "mount_fileshare_script" {
+  filename = "${path.module}/mount-fileshare.ps1" # Path to save the script
 
-  settings = jsonencode({
-    "commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -File ${path.module}/mount-fileshare.ps1 -storageAccountName ${azurerm_storage_account.stgacc.name} -storageAccountKey ${azurerm_storage_account.stgacc.primary_access_key} -fileShareName ${azurerm_storage_share.fileshare.name} -mountPoint 'Z:'"
-  })
+  content = <<-EOF
+  \$storageAccountName = "${azurerm_storage_account.stgacc.name}"
+  \$shareName = "${azurerm_storage_share.fileshare.name}"
+  \$storageAccountKey = "${azurerm_storage_account.stgacc.primary_access_key}"
 
-  protected_settings = jsonencode({
-    "storageAccountName" = azurerm_storage_account.stgacc.name
-    "storageAccountKey"  = azurerm_storage_account.stgacc.primary_access_key
-  })
+  # Mount point for the file share
+  \$mountPoint = "Z:"
 
-  depends_on = [azurerm_virtual_machine.vm]
+  # Create the credential object
+  \$user = "\$storageAccountName"
+  \$pass = ConvertTo-SecureString -String "\$storageAccountKey" -AsPlainText -Force
+  \$credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList \$user, \$pass
+
+  # Mount the file share
+  New-PSDrive -Name \$mountPoint.Substring(0, 1) -PSProvider FileSystem -Root "\\\\\$storageAccountName.file.core.windows.net\\\$shareName" -Credential \$credential -Persist
+
+  # Ensure the drive is mounted at startup
+  \$script = "New-PSDrive -Name \$(\$mountPoint.Substring(0, 1)) -PSProvider FileSystem -Root '\\\\\$storageAccountName.file.core.windows.net\\\$shareName' -Credential (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList \$user, \$pass) -Persist"
+  \$scriptBlock = [scriptblock]::Create(\$script)
+  Set-Content -Path C:\\mount-fileshare.ps1 -Value \$scriptBlock
+  EOF
 }
 
-*/
+
 
 /*
 # create private dns zone
@@ -711,6 +720,8 @@ The following providers are used by this module:
 
 - <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (~> 3.1.0)
 
+- <a name="provider_local"></a> [local](#provider\_local)
+
 ## Resources
 
 The following resources are used by this module:
@@ -721,12 +732,15 @@ The following resources are used by this module:
 - [azurerm_network_security_group.nsg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_group) (resource)
 - [azurerm_recovery_services_vault.rsv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/recovery_services_vault) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
+- [azurerm_storage_account.stgacc](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) (resource)
+- [azurerm_storage_share.fileshare](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_share) (resource)
 - [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_network_security_group_association.nsg-association](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_network_security_group_association) (resource)
 - [azurerm_virtual_machine.vm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine) (resource)
 - [azurerm_virtual_network.vnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azurerm_virtual_network_peering.hub_to_spoke1](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_virtual_network_peering.spoke1_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
+- [local_file.mount_fileshare_script](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) (resource)
 - [azuread_client_config.current](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/data-sources/client_config) (data source)
 - [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
 - [azurerm_key_vault.kv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault) (data source)

@@ -1,61 +1,81 @@
 <!-- BEGIN_TF_DOCS -->
-## Hub Resource Group
-# Centralized Services and Networking Overview
-The Hub Resource Group contains resources that provide centralized services and networking for the entire infrastructure, acting as a central point for connectivity and security management.
+# Hub Resource Group 🌐
 
-## Prerequisites
+## Centralized Services and Networking Overview 🌐
+- The Hub Resource Group contains resources that provide centralized services and networking for the entire infrastructure, acting as a central point for connectivity and security management.
 
-Before running this Terraform configuration, ensure you have the following prerequisites:
-- Terraform installed on your local machine.
-- Azure CLI installed and authenticated.
-- Proper access permissions to create resources in the Azure subscription.
+## Prerequisites ⚙️
+### Before running this Terraform configuration, ensure you have the following prerequisites:
 
-## Configuration details
-# Integration and Communication Between Spokes
-- 1.Create the Resource Group: Set up a resource group for the hub to house all centralized services and networking resources.
+- Terraform installed on your local machine. 🛠️
+- Azure CLI installed and authenticated. 🔑
+- Proper access permissions to create resources in the Azure subscription. ✅
+### Configuration Details 📝
+### Integration and Communication Between Spokes 🔗
+1. Create the Resource Group 🗂️
+- Set up a resource group for the hub to house all centralized services and networking resources.
 
-- 2.Create the Virtual Network: Define a virtual network for the hub, specifying the address space and other configurations.
+2. Create the Virtual Network 🌐
+- Define a virtual network for the hub, specifying the address space and other configurations.
 
-- 3.Create Subnets: Segment the virtual network into smaller subnets, each with its own address prefix and potential service delegations.
+3. Create Subnets 🧩
+- Segment the virtual network into smaller subnets, each with its own address prefix and potential service delegations.
 
-- 4.Create Public IPs: Allocate public IP addresses for resources that need to be accessible from the internet.
+4. Create Public IPs 🌍
+- Allocate public IP addresses for resources that need to be accessible from the internet.
 
-- 5.Create a Bastion Host: Deploy a Bastion Host for secure RDP/SSH access to virtual machines in the network without exposing them to the public internet.
+5. Create a Bastion Host 🔐
+- Deploy a Bastion Host for secure RDP/SSH access to virtual machines in the network without exposing them to the public internet.
 
-- 6.Create a Virtual Network Gateway: Establish a VPN gateway to enable site-to-site VPN connections between on-premises and Azure.
+6. Create a Virtual Network Gateway 🔗
+- Establish a VPN gateway to enable site-to-site VPN connections between on-premises and Azure.
 
-- 7.Create a Firewall: Deploy a firewall to protect and control inbound and outbound traffic across the network.
+7. Create a Firewall 🛡️
+- Deploy a firewall to protect and control inbound and outbound traffic across the network.
 
-- 8.Create a Firewall Policy: Define a firewall policy to manage rules and settings for the Azure Firewall.
+8. Create a Firewall Policy 📜
+- Define a firewall policy to manage rules and settings for the Azure Firewall.
 
-- 9.Create an IP Group: Organize IP addresses into groups for easier management and application of firewall rules.
+9. Create an IP Group 🏷️
+- Organize IP addresses into groups for easier management and application of firewall rules.
 
-- 10.Create Firewall Rules: Configure network and application rules within the firewall policy to control traffic flow.
+10. Create Firewall Rules 🔧
+- Configure network and application rules within the firewall policy to control traffic flow.
 
-- 11.Set Up Virtual Network Peering: Establish peering connections between the hub virtual network and the spoke virtual networks to enable communication between them.
+11. Set Up Virtual Network Peering 🔄
+- Establish peering connections between the hub virtual network and the spoke virtual networks to enable communication between them.
 
-## Integration with On-Premises Network
-- 1.Define On-Premises Public IP and Virtual Network: Obtain the public IP address and define the virtual network for the on-premises infrastructure.
+### Integration with On-Premises Network 🏢
+1. Define On-Premises Public IP and Virtual Network 🌍
+- Obtain the public IP address and define the virtual network for the on-premises infrastructure.
 
-- 2.Create a Local Network Gateway: Set up a local network gateway in Azure to represent the on-premises VPN device. Specify the public IP address of the on-premises VPN device and the address space used in the on-premises network.
+2. Create a Local Network Gateway 🌐
+- Set up a local network gateway in Azure to represent the on-premises VPN device. Specify the public IP address of the on-premises VPN device and the address space used in the on-premises network.
 
-- 3.Create a VPN Connection: Establish a VPN connection between the Azure virtual network gateway and the on-premises local network gateway. Configure the connection type (IPsec) and the shared key for authentication.
+3. Create a VPN Connection 🔗
+- Establish a VPN connection between the Azure virtual network gateway and the on-premises local network gateway. Configure the connection type (IPsec) and the shared key for authentication.
 
-- 4.Create a Route Table: Define a route table to manage traffic routing between the on-premises network and Azure. Add routes to ensure traffic destined for the on-premises network is correctly directed through the VPN gateway.
+4. Create a Route Table 🗺️
+- Define a route table to manage traffic routing between the on-premises network and Azure. Add routes to ensure traffic destined for the on-premises network is correctly directed through the VPN gateway.
 
-- 5.Associate the Route Table with Subnets: Link the route table to the appropriate subnets within the hub virtual network to enforce the routing rules.
--
+5. Associate the Route Table with Subnets 🔗
+- Link the route table to the appropriate subnets within the hub virtual network to enforce the routing rules.
+
 # Diagram
 ![hub](/home/aflalahmad/terraform-hub-and-spoke/Images/hub.png)
 
-###### Apply the Terraform configurations :
+### Apply the Terraform configurations :
 Deploy the resources using Terraform,
+- Initialize Terraform 🔄:
 ```
 terraform init
 ```
+- Plan the Deployment 📝:
+
 ```
 terraform plan "--var-file=variables.tfvars"
 ```
+- Apply the Configuration ✅:
 ```
 terraform apply "--var-file=variables.tfvars"
 ```
@@ -190,7 +210,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
   nat_rule_collection {          
     name     = "DNat-rule-collection"
     priority = 100
-    action   = "DNat"
+    action   = "Dnat"
 
     rule {
       name             = "Allow-RDP"
@@ -205,8 +225,8 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
  
  network_rule_collection {
     name     = "AllowICMP_Rules"
-    priority = 100
-     action       = "Deny"
+    priority = 200
+     action       = "Allow"
 
     rule {
       name         = "AllowICMP"
@@ -217,7 +237,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
     }
   }
 }
-
+/*
 #connect to on premise 
  data "azurerm_public_ip" "onprem_publicip" {
    name = "onprem_vnetgatway_publicip"
@@ -253,7 +273,7 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
      depends_on = [ azurerm_virtual_network_gateway.vnetgateway,azurerm_local_network_gateway.hub_local_network_gateway ]
 }
-
+*/
 #create the route table
 
 resource "azurerm_route_table" "route_table" {
@@ -337,7 +357,6 @@ The following resources are used by this module:
 - [azurerm_firewall.firewall](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
 - [azurerm_firewall_policy.policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy) (resource)
 - [azurerm_firewall_policy_rule_collection_group.icmp_rule](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy_rule_collection_group) (resource)
-- [azurerm_local_network_gateway.hub_local_network_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/local_network_gateway) (resource)
 - [azurerm_public_ip.publi_ips](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_route_table.route_table](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
@@ -345,9 +364,6 @@ The following resources are used by this module:
 - [azurerm_subnet_route_table_association.route-table-ass](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
 - [azurerm_virtual_network.hubvnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azurerm_virtual_network_gateway.vnetgateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway) (resource)
-- [azurerm_virtual_network_gateway_connection.onprem_vpn_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway_connection) (resource)
-- [azurerm_public_ip.onprem_publicip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/public_ip) (data source)
-- [azurerm_virtual_network.onprem_vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -475,10 +491,6 @@ Description: The ID of the Azure Bastion host.
 
 Description: The ID of the Azure Firewall.
 
-### <a name="output_local_network_gateway_id"></a> [local\_network\_gateway\_id](#output\_local\_network\_gateway\_id)
-
-Description: The ID of the local network gateway for on-premises connections.
-
 ### <a name="output_public_ip_ids"></a> [public\_ip\_ids](#output\_public\_ip\_ids)
 
 Description: Map of public IP names to their IDs.
@@ -498,10 +510,6 @@ Description: The ID of the virtual network gateway.
 ### <a name="output_virtual_network_id"></a> [virtual\_network\_id](#output\_virtual\_network\_id)
 
 Description: The ID of the virtual network in the hub.
-
-### <a name="output_vpn_connection_id"></a> [vpn\_connection\_id](#output\_vpn\_connection\_id)
-
-Description: The ID of the VPN connection to on-premises network.
 
 ## Modules
 
