@@ -62,7 +62,7 @@
 
 
 # Diagram
-![hub](/home/aflalahmad/terraform-hub-and-spoke/Images/hub.png)
+![On_Premises](Images/hub.png)
 
 ### Apply the Terraform configurations :
 Deploy the resources using Terraform,
