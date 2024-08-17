@@ -105,9 +105,9 @@ terraform init
 - Plan the Deployment 📝:
 
 ```
-terraform plan "--var-file=variables.tfvars"
+terraform plan 
 ```
 - Apply the Configuration ✅:
 ```
-terraform apply "--var-file=variables.tfvars"
+terraform apply 
 ```
