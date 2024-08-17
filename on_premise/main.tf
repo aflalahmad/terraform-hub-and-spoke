@@ -59,7 +59,7 @@ resource "azurerm_virtual_network_gateway" "onprem_vnetgateway" {
     depends_on = [ azurerm_subnet.subnets ]
   
 }
-/*
+
 data "azurerm_public_ip" "hub_publicip" {
   name = "gateway-public-ip"
   resource_group_name = "HubRG"
@@ -229,7 +229,7 @@ resource "azurerm_virtual_machine" "vm" {
   }
   
 }
-*/
+
 #create a route table
 resource "azurerm_route_table" "spoke1-udr" {
 

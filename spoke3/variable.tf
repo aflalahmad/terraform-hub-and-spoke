@@ -40,11 +40,3 @@ variable "subnet_details" {
   }
 }
 
-variable "vnet_peerings" {
-  type        = map(object({
-    allow_forwarded_traffic      = bool
-    allow_gateway_transit        = bool
-    allow_virtual_network_access = bool
-  }))
-  description = "Map of VNet peering settings."
-}

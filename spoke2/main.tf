@@ -133,6 +133,18 @@ data "azurerm_key_vault_secret" "vm_admin_password" {
 }
 
 
+
+#adding ssl cerificate
+resource "azurerm_user_assigned_identity" "base" {
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  name                = "mi-appgw-keyvault"
+}
+
+
+
+
+
 #Virtual machine scale set
 resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
   name                 = var.vmss_name
