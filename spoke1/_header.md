@@ -94,8 +94,7 @@ Optional Resources 🛠️
 
 # Diagram
 
-![spoke1](Images/spoke1.png)
-
+![spoke1](https://github.com/user-attachments/assets/7bed7c30-e4a1-4efc-946e-138cdf9a8c77)
 ### Apply the Terraform configurations :
 Deploy the resources using Terraform,
 - Initialize Terraform 🔄:

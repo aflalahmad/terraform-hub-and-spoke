@@ -4,7 +4,6 @@ rg = {
 }
 
 vnet_name = "spoke2VNet"
-
 subnets = {
      "spoke2subnet1" = {
         name = "spoke2subnet1",
@@ -19,7 +18,7 @@ subnets = {
      }
 }
 
-vmss_name = "myvmscaleset-new"
+vmss_name = "vmsscale"
 sku = "Standard_F2"
 instance = 2
 rsv_name = "spoke2rescoveryservicevault"

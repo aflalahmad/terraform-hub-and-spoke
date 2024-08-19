@@ -51,7 +51,7 @@ This Resource Group includes virtual networks (VNets) with subnets and network s
 
 # Diagram
 
-![spoke2](Images/spoke2.png)
+![spoke2](https://github.com/user-attachments/assets/7c5b8a3b-7913-412e-a0c2-828c07a1449a)
 
 ### Apply the Terraform configurations :
 Deploy the resources using Terraform,
@@ -77,7 +77,7 @@ resource "azurerm_resource_group" "rg" {
 }
 #virtual network
 resource "azurerm_virtual_network" "vnet" {
-  name = "spoke2_vnet"
+  name = var.vnet_name
   resource_group_name = azurerm_resource_group.rg.name
   location = azurerm_resource_group.rg.location
   address_space = ["10.0.0.0/24"]
@@ -87,7 +87,7 @@ resource "azurerm_subnet" "subnets" {
 
     for_each = var.subnets
 
-    name = each.value.name
+    name = each.key
     address_prefixes = [each.value.address_prefixes]
     resource_group_name = azurerm_resource_group.rg.name
     virtual_network_name = azurerm_virtual_network.vnet.name
@@ -98,7 +98,7 @@ resource "azurerm_subnet" "subnets" {
 resource "azurerm_network_security_group" "nsg" {
      for_each = var.subnets
 
-     name = each.value.name
+     name = each.key
      resource_group_name = azurerm_resource_group.rg.name
      location = azurerm_resource_group.rg.location
 
@@ -119,10 +119,9 @@ resource "azurerm_network_security_group" "nsg" {
 }
 #nsg association
 resource "azurerm_subnet_network_security_group_association" "nsg-association" {
-      for_each = var.subnets
 
-      subnet_id = azurerm_subnet.subnets[each.key].id
-      network_security_group_id = azurerm_network_security_group.nsg[each.key].id
+      subnet_id = azurerm_subnet.subnets["spoke2subnet1"].id
+      network_security_group_id = azurerm_network_security_group.nsg["spoke2subnet1"].id
       depends_on = [ azurerm_network_security_group.nsg,azurerm_subnet.subnets ]
 }
 
@@ -148,7 +147,7 @@ resource "azurerm_application_gateway" "appGW" {
 
   gateway_ip_configuration {
     name      = "appgw-ip-config"
-    subnet_id = azurerm_subnet.subnets["AppGw-subnet"].id
+    subnet_id = azurerm_subnet.subnets["AppGw"].id
   }
 
   frontend_ip_configuration {
@@ -163,6 +162,7 @@ resource "azurerm_application_gateway" "appGW" {
 
   backend_address_pool {
     name = "appgw-backend-pool"
+    
   }
 
   backend_http_settings {
@@ -178,6 +178,17 @@ resource "azurerm_application_gateway" "appGW" {
     frontend_ip_configuration_name = "appgw-frontend-ip"
     frontend_port_name             = "frontend-port"
     protocol                       = "Http"
+    ssl_certificate_name = "app-listener"
+  }
+
+  identity {
+    type = "UserAssigned"
+    identity_ids = [ data.azurerm_user_assigned_identity.base.id ]
+  }
+
+  ssl_certificate {
+    name = "app-listener"
+    key_vault_secret_id = data.azurerm_key_vault_certificate.example.secret_id
   }
 
   request_routing_rule {
@@ -193,56 +204,58 @@ resource "azurerm_application_gateway" "appGW" {
 #key vault for secret username and password
 data "azurerm_key_vault" "kv" {
     name = "Aflalkeyvault7788"
-    resource_group_name = "spoke1RG"
+    resource_group_name = "onprem_RG"
 }
 data "azurerm_key_vault_secret" "vm_admin_username" {
-     name = "aflal_username"
+     name = "aflalahusername"
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 data "azurerm_key_vault_secret" "vm_admin_password" {
-     name = "aflal_password"
+     name = "aflalahpassword"
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 
+#user identity using data block
+data "azurerm_user_assigned_identity" "base" {
+  name = "mi-appgw-keyvault"
+  resource_group_name = "onprem_RG"
+}
+
+# key vault certificate using data block
+data "azurerm_key_vault_certificate" "example" {
+  name = "generated-cert"
+  key_vault_id = data.azurerm_key_vault.kv.id
+}
 
 #Virtual machine scale set
 resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
-  name                 = var.vmss_name
-  resource_group_name  = azurerm_resource_group.rg.name
-  location             = azurerm_resource_group.rg.location
-  sku                  = var.sku
-  instances            = var.instance
-  admin_password       = data.azurerm_key_vault_secret.vm_admin_password.value
-  admin_username       = data.azurerm_key_vault_secret.vm_admin_username.value
-  computer_name_prefix = "vm-"
-
+  name                = var.vmss_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  sku = var.sku
+  instances = var.instance
+  admin_username = data.azurerm_key_vault_secret.vm_admin_username.value
+  admin_password = data.azurerm_key_vault_secret.vm_admin_password.value
+  network_interface {
+    name = "myvmssname"
+    primary = true
+    ip_configuration {
+      name = "internal"
+      subnet_id = azurerm_subnet.subnets["spoke2subnet1"].id
+      application_gateway_backend_address_pool_ids = local.application_gateway_backend_address_pool_ids
+    }
+  }
+  os_disk {
+    caching = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
   source_image_reference {
     publisher = "MicrosoftWindowsServer"
     offer     = "WindowsServer"
-    sku       = "2016-Datacenter-Server-Core"
+    sku       = "2019-Datacenter"
     version   = "latest"
   }
-
-  os_disk {
-    storage_account_type = "Standard_LRS"
-    caching              = "ReadWrite"
-  }
-  dynamic "network_interface" {
-    for_each = azurerm_subnet.subnets
-
-    content {
-      name    = "example-${network_interface.key}"
-      primary = network_interface.key == "subnet1"  
-
-      ip_configuration {
-        name      = "internal"
-        primary   = network_interface.key == "subnet1"  
-        subnet_id = network_interface.value.id
-      }
-    }
-  }
 }
-
 
 #using data block for Hub vnet
 data "azurerm_virtual_network" "Hub_VNet" {
@@ -251,15 +264,16 @@ data "azurerm_virtual_network" "Hub_VNet" {
 }
 #spoke2 to hub peerings
 resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
-    for_each = var.vnet_peerings
 
-    name                     = "spoke2-to-hub-peering-${each.key}"  
+    name                     = "spoke2-to-hub-peering"  
     virtual_network_name     = azurerm_virtual_network.vnet.name
     remote_virtual_network_id = data.azurerm_virtual_network.Hub_VNet.id
 
-    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
-    allow_gateway_transit      = each.value.allow_gateway_transit
-    allow_virtual_network_access = each.value.allow_virtual_network_access
+      allow_virtual_network_access = true
+  allow_forwarded_traffic   = true
+  allow_gateway_transit     = false
+  use_remote_gateways       = false
+
 
     resource_group_name = azurerm_resource_group.rg.name
 
@@ -270,17 +284,17 @@ resource "azurerm_virtual_network_peering" "spoke2_to_hub" {
 }
 
 resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
-    for_each = var.vnet_peerings
 
-    name                     = "hub-to-spoke2-peering-${each.key}" 
+    name                     = "hub-to-spoke2-peering" 
     virtual_network_name     = data.azurerm_virtual_network.Hub_VNet.name
     remote_virtual_network_id = azurerm_virtual_network.vnet.id
 
-    allow_forwarded_traffic    = each.value.allow_forwarded_traffic
-    allow_gateway_transit      = each.value.allow_gateway_transit
-    allow_virtual_network_access = each.value.allow_virtual_network_access
+ allow_virtual_network_access = true
+  allow_forwarded_traffic   = true
+  allow_gateway_transit     = true
+  use_remote_gateways       = false
 
-    resource_group_name = azurerm_resource_group.rg.name
+    resource_group_name = data.azurerm_virtual_network.Hub_VNet.resource_group_name
 
     depends_on = [
         azurerm_virtual_network.vnet,
@@ -289,7 +303,7 @@ resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
     ]
 }
 
-/*
+
 #Daily backup for VM
 # Recovery Services Vault
 resource "azurerm_recovery_services_vault" "rsv" {
@@ -425,8 +439,10 @@ The following providers are used by this module:
 The following resources are used by this module:
 
 - [azurerm_application_gateway.appGW](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/application_gateway) (resource)
+- [azurerm_backup_policy_vm.backup_policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/backup_policy_vm) (resource)
 - [azurerm_network_security_group.nsg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_group) (resource)
 - [azurerm_public_ip.public_ip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
+- [azurerm_recovery_services_vault.rsv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/recovery_services_vault) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_network_security_group_association.nsg-association](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_network_security_group_association) (resource)
@@ -435,26 +451,16 @@ The following resources are used by this module:
 - [azurerm_virtual_network_peering.spoke2_to_hub](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_peering) (resource)
 - [azurerm_windows_virtual_machine_scale_set.vmss](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/windows_virtual_machine_scale_set) (resource)
 - [azurerm_key_vault.kv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault) (data source)
+- [azurerm_key_vault_certificate.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault_certificate) (data source)
 - [azurerm_key_vault_secret.vm_admin_password](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault_secret) (data source)
 - [azurerm_key_vault_secret.vm_admin_username](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/key_vault_secret) (data source)
+- [azurerm_user_assigned_identity.base](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/user_assigned_identity) (data source)
 - [azurerm_virtual_network.Hub_VNet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
 
 The following input variables are required:
-
-### <a name="input_admin_password"></a> [admin\_password](#input\_admin\_password)
-
-Description: Admin password for virtual machines.
-
-Type: `string`
-
-### <a name="input_admin_username"></a> [admin\_username](#input\_admin\_username)
-
-Description: Admin username for virtual machines.
-
-Type: `string`
 
 ### <a name="input_backuppolicy_name"></a> [backuppolicy\_name](#input\_backuppolicy\_name)
 
@@ -519,20 +525,6 @@ Description: Name of the virtual network.
 
 Type: `string`
 
-### <a name="input_vnet_peerings"></a> [vnet\_peerings](#input\_vnet\_peerings)
-
-Description: Map of VNet peering settings.
-
-Type:
-
-```hcl
-map(object({
-    allow_forwarded_traffic      = bool
-    allow_gateway_transit        = bool
-    allow_virtual_network_access = bool
-  }))
-```
-
 ## Optional Inputs
 
 The following input variables are optional (have default values):
@@ -565,14 +557,6 @@ Description: Map of network security group names to their IDs.
 
 Description: The name of the Azure resource group.
 
-### <a name="output_route_table_ids"></a> [route\_table\_ids](#output\_route\_table\_ids)
-
-Description: Map of route table names to their IDs.
-
-### <a name="output_subnet_associations"></a> [subnet\_associations](#output\_subnet\_associations)
-
-Description: Map of subnet names to their associated NSG associations.
-
 ### <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids)
 
 Description: Map of subnet names to their IDs.
@@ -580,10 +564,6 @@ Description: Map of subnet names to their IDs.
 ### <a name="output_virtual_network_name"></a> [virtual\_network\_name](#output\_virtual\_network\_name)
 
 Description: The name of the Azure virtual network.
-
-### <a name="output_vmss_instances"></a> [vmss\_instances](#output\_vmss\_instances)
-
-Description: List of instance IDs in the Azure virtual machine scale set.
 
 ### <a name="output_vmss_name"></a> [vmss\_name](#output\_vmss\_name)
 

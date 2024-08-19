@@ -75,7 +75,7 @@ resource "azurerm_application_gateway" "appGW" {
 
   gateway_ip_configuration {
     name      = "appgw-ip-config"
-    subnet_id = azurerm_subnet.subnets["AppGw-subnet"].id
+    subnet_id = azurerm_subnet.subnets["AppGw"].id
   }
 
   frontend_ip_configuration {
@@ -90,6 +90,7 @@ resource "azurerm_application_gateway" "appGW" {
 
   backend_address_pool {
     name = "appgw-backend-pool"
+    
   }
 
   backend_http_settings {
@@ -105,6 +106,17 @@ resource "azurerm_application_gateway" "appGW" {
     frontend_ip_configuration_name = "appgw-frontend-ip"
     frontend_port_name             = "frontend-port"
     protocol                       = "Http"
+    ssl_certificate_name = "app-listener"
+  }
+
+  identity {
+    type = "UserAssigned"
+    identity_ids = [ data.azurerm_user_assigned_identity.base.id ]
+  }
+
+  ssl_certificate {
+    name = "app-listener"
+    key_vault_secret_id = data.azurerm_key_vault_certificate.example.secret_id
   }
 
   request_routing_rule {
@@ -120,56 +132,58 @@ resource "azurerm_application_gateway" "appGW" {
 #key vault for secret username and password
 data "azurerm_key_vault" "kv" {
     name = "Aflalkeyvault7788"
-    resource_group_name = "spoke1RG"
+    resource_group_name = "onprem_RG"
 }
 data "azurerm_key_vault_secret" "vm_admin_username" {
-     name = "aflal_username"
+     name = "aflalahusername"
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 data "azurerm_key_vault_secret" "vm_admin_password" {
-     name = "aflal_password"
+     name = "aflalahpassword"
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 
+#user identity using data block
+data "azurerm_user_assigned_identity" "base" {
+  name = "mi-appgw-keyvault"
+  resource_group_name = "onprem_RG"
+}
+
+# key vault certificate using data block
+data "azurerm_key_vault_certificate" "example" {
+  name = "generated-cert"
+  key_vault_id = data.azurerm_key_vault.kv.id
+}
 
 #Virtual machine scale set
 resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
-  name                 = var.vmss_name
-  resource_group_name  = azurerm_resource_group.rg.name
-  location             = azurerm_resource_group.rg.location
-  sku                  = var.sku
-  instances            = var.instance
-  admin_password       = data.azurerm_key_vault_secret.vm_admin_password.value
-  admin_username       = data.azurerm_key_vault_secret.vm_admin_username.value
-  computer_name_prefix = "vm-"
-
+  name                = var.vmss_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  sku = var.sku
+  instances = var.instance
+  admin_username = data.azurerm_key_vault_secret.vm_admin_username.value
+  admin_password = data.azurerm_key_vault_secret.vm_admin_password.value
+  network_interface {
+    name = "myvmssname"
+    primary = true
+    ip_configuration {
+      name = "internal"
+      subnet_id = azurerm_subnet.subnets["spoke2subnet1"].id
+      application_gateway_backend_address_pool_ids = local.application_gateway_backend_address_pool_ids
+    }
+  }
+  os_disk {
+    caching = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
   source_image_reference {
     publisher = "MicrosoftWindowsServer"
     offer     = "WindowsServer"
-    sku       = "2016-Datacenter-Server-Core"
+    sku       = "2019-Datacenter"
     version   = "latest"
   }
-
-  os_disk {
-    storage_account_type = "Standard_LRS"
-    caching              = "ReadWrite"
-  }
-  dynamic "network_interface" {
-    for_each = azurerm_subnet.subnets
-
-    content {
-      name    = "example-${network_interface.key}"
-      primary = network_interface.key == "subnet1"  
-
-      ip_configuration {
-        name      = "internal"
-        primary   = network_interface.key == "subnet1"  
-        subnet_id = network_interface.value.id
-      }
-    }
-  }
 }
-
 
 #using data block for Hub vnet
 data "azurerm_virtual_network" "Hub_VNet" {
@@ -217,7 +231,7 @@ resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
     ]
 }
 
-/*
+
 #Daily backup for VM
 # Recovery Services Vault
 resource "azurerm_recovery_services_vault" "rsv" {

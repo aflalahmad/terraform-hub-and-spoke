@@ -110,7 +110,14 @@ Example IP range: 10.3.0.0/24
 ### 🛠 Spoke Connections through Azure Firewall or NVA:
 
 Use Azure Firewall or another Network Virtual Appliance (NVA) in the hub to facilitate traffic between spokes.
-🌐 Spoke Connections to Remote Networks through a Hub 
+🌐 Spoke Connections to Remote Networks through Hub
+### ⚠️ Note on Connectivity:
+Currently, pinging VMs in the spoke network from the on-premises network is not functioning as expected. Troubleshooting is ongoing, and updates will be provided once the issue is resolved.
+
+### 🔍 Considerations:
+### 🔧 Service Integration and Testing:
+- SSL Certificates: SSL certificates are being managed in Azure Key Vault and integrated into the Application Gateway within the spoke network for secure communication.
+- Ping Connectivity Issue: There is an ongoing issue with pinging VMs in the spoke network from the on-premises environment. This is being actively investigated, and resolution steps will be updated accordingly.
 ### Gateway:
 
 Configure VNet peering or connected network groups to enable communication between spokes and remote networks through the hub gateway.

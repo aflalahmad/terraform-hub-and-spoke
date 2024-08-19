@@ -44,7 +44,7 @@ This resource group includes virtual networks (VNets) with subnets, network secu
 - Associate the route table with the subnets to enforce the routing rules and ensure proper traffic flow between on-premises and Azure.
 
 # Diagram
-![onprem](/home/aflalahmad/terraform-hub-and-spoke/Images/onprem.png)
+![onprem](https://github.com/user-attachments/assets/d2a40c04-a1cc-4094-a087-37d2fc3fc19a)
 
 ### Apply the Terraform configurations :
 Deploy the resources using Terraform,
@@ -63,6 +63,10 @@ terraform apply
 ```
 
 ```hcl
+
+data "azurerm_client_config" "current" {}
+data "azuread_client_config" "current" {}
+
 #create a resource group
 resource "azurerm_resource_group" "rg" {
     name = var.rg.resource_group
@@ -124,7 +128,7 @@ resource "azurerm_virtual_network_gateway" "onprem_vnetgateway" {
     depends_on = [ azurerm_subnet.subnets ]
   
 }
-/*
+
 data "azurerm_public_ip" "hub_publicip" {
   name = "gateway-public-ip"
   resource_group_name = "HubRG"
@@ -160,80 +164,129 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
      depends_on = [ azurerm_virtual_network_gateway.onprem_vnetgateway,azurerm_local_network_gateway.onprem_local_network_gateway ]
 }
-
-
-
-#key vault for storing username and password
-resource "azurerm_key_vault" "kv" {
-
-  name = var.keyvault_name
+# Managed Identity
+resource "azurerm_user_assigned_identity" "base" {
   resource_group_name = azurerm_resource_group.rg.name
-  location = azurerm_resource_group.rg.location
-  tenant_id = data.azurerm_client_config.current.tenant_id
-  sku_name = "standard"
+  location            = azurerm_resource_group.rg.location
+  name                = "mi-appgw-keyvault"
+}
+
+# Key Vault
+resource "azurerm_key_vault" "kv" {
+  name                = var.keyvault_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  sku_name            = "standard"
   
+  network_acls {
+    bypass = "AzureServices"
+    default_action = "Allow"
+  }
 
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = data.azuread_client_config.current.object_id
+    object_id = azurerm_user_assigned_identity.base.principal_id
     
-    certificate_permissions = [
-      "get",
-      "list",
-      "delete",
-      "create",
-      "import",
-      "update",
-      "managecontacts",
-      "getissuers",
-      "listissuers",
-      "setissuers",
-      "deleteissuers",
-      "manageissuers",
+    secret_permissions = [
+      "Get",
+      "List",
+      "Set",
+      "Delete",
+      "Backup",
+      "Recover",
+      "Purge"
     ]
 
-    secret_permissions = [
-    "Backup",
-    "Delete",
-    "Get",
-    "List",
-    "Purge",
-    "Recover",
-    "Restore",
-    "Set",
-  ]
+    certificate_permissions = [
+      "Get",
+      "List",
+      "Create",
+      "Delete",
+      "Update",
+      "Import",
+      "ManageContacts",
+      "ManageIssuers",
+      "Purge",
+      "Recover"
+    ]
 
     key_permissions = [
-      "get",
-      "list",
-      "create",
-      "update",
-      "delete",
+      "Get",
+      "List",
+      "Create",
+      "Update",
+      "Import",
+      "Delete"
     ]
   }
-  
 }
 
-#keyvault secret for username
+# Key Vault Certificate
+resource "azurerm_key_vault_certificate" "example" {
+  name         = "generated-cert"
+  key_vault_id = azurerm_key_vault.kv.id
+
+  certificate_policy {
+    issuer_parameters {
+      name = "Self"
+    }
+
+    key_properties {
+      exportable = true
+      key_size   = 2048
+      key_type   = "RSA"
+      reuse_key  = true
+    }
+
+    lifetime_action {
+      action {
+        action_type = "AutoRenew"
+      }
+
+      trigger {
+        days_before_expiry = 30
+      }
+    }
+
+    secret_properties {
+      content_type = "application/x-pkcs12"
+    }
+
+    x509_certificate_properties {
+      extended_key_usage = ["1.3.6.1.5.5.7.3.1"]
+
+      key_usage = [
+        "cRLSign",
+        "dataEncipherment",
+        "digitalSignature",
+        "keyAgreement",
+        "keyCertSign",
+        "keyEncipherment",
+      ]
+
+      subject_alternative_names {
+        dns_names = ["internal.contoso.com", "domain.hello.world"]
+      }
+
+      subject            = "CN=hello-world"
+      validity_in_months = 12
+    }
+  }
+}
+
+# Key Vault Secrets
 resource "azurerm_key_vault_secret" "vm_admin_username" {
-
-  for_each = var.vms
-  name = "aflal_username"
-  value = each.value.admin_username
+  name         = "aflalahusername"
+  value        = var.admin_username
   key_vault_id = azurerm_key_vault.kv.id
-  
 }
 
-#keyvault secret for password
 resource "azurerm_key_vault_secret" "vm_admin_password" {
-
-  for_each = var.vms
-  name = "aflal_password"
-  value = each.value.admin_password
+  name         = "aflalahpassword"
+  value        = var.admin_password
   key_vault_id = azurerm_key_vault.kv.id
-  
 }
-
 
 #Network interface card
 resource "azurerm_network_interface" "nic" {
@@ -294,7 +347,7 @@ resource "azurerm_virtual_machine" "vm" {
   }
   
 }
-*/
+
 #create a route table
 resource "azurerm_route_table" "spoke1-udr" {
 
@@ -332,19 +385,34 @@ The following requirements are needed by this module:
 
 The following providers are used by this module:
 
+- <a name="provider_azuread"></a> [azuread](#provider\_azuread)
+
 - <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) (~> 3.1.0)
 
 ## Resources
 
 The following resources are used by this module:
 
+- [azurerm_key_vault.kv](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault) (resource)
+- [azurerm_key_vault_certificate.example](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_certificate) (resource)
+- [azurerm_key_vault_secret.vm_admin_password](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
+- [azurerm_key_vault_secret.vm_admin_username](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault_secret) (resource)
+- [azurerm_local_network_gateway.onprem_local_network_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/local_network_gateway) (resource)
+- [azurerm_network_interface.nic](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_interface) (resource)
 - [azurerm_public_ip.onprem_vnetgateway_pip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_route_table.spoke1-udr](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
 - [azurerm_subnet.subnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet) (resource)
 - [azurerm_subnet_route_table_association.routetable--ass](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
+- [azurerm_user_assigned_identity.base](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/user_assigned_identity) (resource)
+- [azurerm_virtual_machine.vm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine) (resource)
 - [azurerm_virtual_network.onprem_vnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azurerm_virtual_network_gateway.onprem_vnetgateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway) (resource)
+- [azurerm_virtual_network_gateway_connection.onprem_vpn_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway_connection) (resource)
+- [azuread_client_config.current](https://registry.terraform.io/providers/hashicorp/azuread/latest/docs/data-sources/client_config) (data source)
+- [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) (data source)
+- [azurerm_public_ip.hub_publicip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/public_ip) (data source)
+- [azurerm_virtual_network.hub_vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs
@@ -354,6 +422,18 @@ The following input variables are required:
 ### <a name="input_address_space"></a> [address\_space](#input\_address\_space)
 
 Description: Address space for the virtual network.
+
+Type: `string`
+
+### <a name="input_admin_password"></a> [admin\_password](#input\_admin\_password)
+
+Description: n/a
+
+Type: `string`
+
+### <a name="input_admin_username"></a> [admin\_username](#input\_admin\_username)
+
+Description: n/a
 
 Type: `string`
 
@@ -414,8 +494,6 @@ map(object({
     host_name        = string
     disk_name        = string
     vm_size          = string
-    admin_username   = string
-    admin_password   = string
     data_disk_size_gb = number
     subnet           = string
   }))
@@ -435,10 +513,6 @@ No optional inputs.
 
 The following outputs are exported:
 
-### <a name="output_public_ip_id"></a> [public\_ip\_id](#output\_public\_ip\_id)
-
-Description: The ID of the public IP address associated with the on-premises virtual network gateway.
-
 ### <a name="output_resource_group_id"></a> [resource\_group\_id](#output\_resource\_group\_id)
 
 Description: The ID of the Azure resource group.
@@ -446,10 +520,6 @@ Description: The ID of the Azure resource group.
 ### <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids)
 
 Description: Map of subnet names to their IDs in the on-premises virtual network.
-
-### <a name="output_virtual_network_gateway_ids"></a> [virtual\_network\_gateway\_ids](#output\_virtual\_network\_gateway\_ids)
-
-Description: Map of subnet names to their IDs for on-premises virtual network gateways.
 
 ### <a name="output_virtual_network_id"></a> [virtual\_network\_id](#output\_virtual\_network\_id)
 

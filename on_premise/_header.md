@@ -44,7 +44,8 @@ This resource group includes virtual networks (VNets) with subnets, network secu
 
 
 # Diagram
-![onprem](Images/onprem.png)
+![onprem](https://github.com/user-attachments/assets/d2a40c04-a1cc-4094-a087-37d2fc3fc19a)
+
 
 ### Apply the Terraform configurations :
 Deploy the resources using Terraform,

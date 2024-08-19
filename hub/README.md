@@ -62,7 +62,7 @@
 - Link the route table to the appropriate subnets within the hub virtual network to enforce the routing rules.
 
 # Diagram
-![On\_Premises](Images/hub.png)
+![hub](https://github.com/user-attachments/assets/2399f67a-33f2-445f-b4fe-e84960523e5e)
 
 ### Apply the Terraform configurations :
 Deploy the resources using Terraform,
@@ -237,7 +237,7 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
     }
   }
 }
-/*
+
 #connect to on premise 
  data "azurerm_public_ip" "onprem_publicip" {
    name = "onprem_vnetgatway_publicip"
@@ -273,7 +273,7 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
      depends_on = [ azurerm_virtual_network_gateway.vnetgateway,azurerm_local_network_gateway.hub_local_network_gateway ]
 }
-*/
+
 #create the route table
 
 resource "azurerm_route_table" "route_table" {
@@ -357,6 +357,7 @@ The following resources are used by this module:
 - [azurerm_firewall.firewall](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall) (resource)
 - [azurerm_firewall_policy.policy](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy) (resource)
 - [azurerm_firewall_policy_rule_collection_group.icmp_rule](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/firewall_policy_rule_collection_group) (resource)
+- [azurerm_local_network_gateway.hub_local_network_gateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/local_network_gateway) (resource)
 - [azurerm_public_ip.publi_ips](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/public_ip) (resource)
 - [azurerm_resource_group.rg](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) (resource)
 - [azurerm_route_table.route_table](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/route_table) (resource)
@@ -364,6 +365,9 @@ The following resources are used by this module:
 - [azurerm_subnet_route_table_association.route-table-ass](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_route_table_association) (resource)
 - [azurerm_virtual_network.hubvnets](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network) (resource)
 - [azurerm_virtual_network_gateway.vnetgateway](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway) (resource)
+- [azurerm_virtual_network_gateway_connection.onprem_vpn_connection](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_network_gateway_connection) (resource)
+- [azurerm_public_ip.onprem_publicip](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/public_ip) (data source)
+- [azurerm_virtual_network.onprem_vnet](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/virtual_network) (data source)
 
 <!-- markdownlint-disable MD013 -->
 ## Required Inputs

@@ -32,8 +32,7 @@ This Resource Group includes an App Service and an App Service Plan. The configu
 
 # Diagram
 
-![spoke3](Images/spoke3.png)
-### Apply the Terraform configurations :
+![spoke3](https://github.com/user-attachments/assets/717945cf-b1af-41d6-a2f3-25e4684f1f30)### Apply the Terraform configurations :
 Deploy the resources using Terraform,
 - Initialize Terraform 🔄:
 ```

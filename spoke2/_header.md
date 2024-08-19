@@ -51,8 +51,7 @@ This Resource Group includes virtual networks (VNets) with subnets and network s
 
 # Diagram
 
-![spoke2](Images/spoke2.png)
-
+![spoke2](https://github.com/user-attachments/assets/7c5b8a3b-7913-412e-a0c2-828c07a1449a)
 
 ### Apply the Terraform configurations :
 Deploy the resources using Terraform,

@@ -49,8 +49,6 @@ variable "vms" {
     host_name        = string
     disk_name        = string
     vm_size          = string
-    admin_username   = string
-    admin_password   = string
     data_disk_size_gb = number
     subnet           = string
   }))

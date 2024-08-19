@@ -62,7 +62,7 @@
 
 
 # Diagram
-![On_Premises](Images/hub.png)
+![hub](https://github.com/user-attachments/assets/2399f67a-33f2-445f-b4fe-e84960523e5e)
 
 ### Apply the Terraform configurations :
 Deploy the resources using Terraform,

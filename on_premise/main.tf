@@ -99,64 +99,129 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
      depends_on = [ azurerm_virtual_network_gateway.onprem_vnetgateway,azurerm_local_network_gateway.onprem_local_network_gateway ]
 }
-
-
-
-#key vault for storing username and password
-resource "azurerm_key_vault" "kv" {
-
-  name = var.keyvault_name
+# Managed Identity
+resource "azurerm_user_assigned_identity" "base" {
   resource_group_name = azurerm_resource_group.rg.name
-  location = azurerm_resource_group.rg.location
-  tenant_id = data.azurerm_client_config.current.tenant_id
-  sku_name = "standard"
+  location            = azurerm_resource_group.rg.location
+  name                = "mi-appgw-keyvault"
+}
+
+# Key Vault
+resource "azurerm_key_vault" "kv" {
+  name                = var.keyvault_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  sku_name            = "standard"
   
+  network_acls {
+    bypass = "AzureServices"
+    default_action = "Allow"
+  }
 
   access_policy {
     tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = data.azuread_client_config.current.object_id
+    object_id = azurerm_user_assigned_identity.base.principal_id
     
-
     secret_permissions = [
-    "Backup",
-    "Delete",
-    "Get",
-    "List",
-    "Purge",
-    "Recover",
-    "Restore",
-    "Set",
-  ]
+      "Get",
+      "List",
+      "Set",
+      "Delete",
+      "Backup",
+      "Recover",
+      "Purge"
+    ]
+
+    certificate_permissions = [
+      "Get",
+      "List",
+      "Create",
+      "Delete",
+      "Update",
+      "Import",
+      "ManageContacts",
+      "ManageIssuers",
+      "Purge",
+      "Recover"
+    ]
 
     key_permissions = [
-      "get",
-      "list",
-      "create",
-      "update",
-      "delete",
+      "Get",
+      "List",
+      "Create",
+      "Update",
+      "Import",
+      "Delete"
     ]
   }
-  
 }
 
-#keyvault secret for username
+# Key Vault Certificate
+resource "azurerm_key_vault_certificate" "example" {
+  name         = "generated-cert"
+  key_vault_id = azurerm_key_vault.kv.id
+
+  certificate_policy {
+    issuer_parameters {
+      name = "Self"
+    }
+
+    key_properties {
+      exportable = true
+      key_size   = 2048
+      key_type   = "RSA"
+      reuse_key  = true
+    }
+
+    lifetime_action {
+      action {
+        action_type = "AutoRenew"
+      }
+
+      trigger {
+        days_before_expiry = 30
+      }
+    }
+
+    secret_properties {
+      content_type = "application/x-pkcs12"
+    }
+
+    x509_certificate_properties {
+      extended_key_usage = ["1.3.6.1.5.5.7.3.1"]
+
+      key_usage = [
+        "cRLSign",
+        "dataEncipherment",
+        "digitalSignature",
+        "keyAgreement",
+        "keyCertSign",
+        "keyEncipherment",
+      ]
+
+      subject_alternative_names {
+        dns_names = ["internal.contoso.com", "domain.hello.world"]
+      }
+
+      subject            = "CN=hello-world"
+      validity_in_months = 12
+    }
+  }
+}
+
+# Key Vault Secrets
 resource "azurerm_key_vault_secret" "vm_admin_username" {
-
-  name = "aflal_username"
-  value = var.admin_username
+  name         = "aflalahusername"
+  value        = var.admin_username
   key_vault_id = azurerm_key_vault.kv.id
-  
 }
 
-#keyvault secret for password
 resource "azurerm_key_vault_secret" "vm_admin_password" {
-
-  name = "aflal_password"
-  value = var.admin_password
+  name         = "aflalahpassword"
+  value        = var.admin_password
   key_vault_id = azurerm_key_vault.kv.id
-  
 }
-
 
 #Network interface card
 resource "azurerm_network_interface" "nic" {
