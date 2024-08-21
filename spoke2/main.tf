@@ -200,7 +200,7 @@ resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
     version   = "latest"
   }
 }
-/*
+
 #using data block for Hub vnet
 data "azurerm_virtual_network" "Hub_VNet" {
   name = "HubVNet"
@@ -247,7 +247,7 @@ resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
     ]
 }
 
-
+/*
 #Daily backup for VM
 # Recovery Services Vault
 resource "azurerm_recovery_services_vault" "rsv" {
