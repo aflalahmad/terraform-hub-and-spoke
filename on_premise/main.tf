@@ -32,7 +32,7 @@ resource "azurerm_subnet" "subnets" {
     depends_on = [ azurerm_virtual_network.onprem_vnets]
   
 }
-/*
+
 #public ip
 resource "azurerm_public_ip" "onprem_vnetgateway_pip" {
    name = var.public_ip_name
@@ -100,7 +100,7 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
      depends_on = [ azurerm_virtual_network_gateway.onprem_vnetgateway,azurerm_local_network_gateway.onprem_local_network_gateway ]
 }
 
-*/
+
 # Key Vault
 resource "azurerm_key_vault" "kv" {
   name                = var.keyvault_name

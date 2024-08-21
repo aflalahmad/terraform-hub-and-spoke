@@ -12,7 +12,7 @@ variable "rg" {
 
 variable "vnets" {
   type        = map(object({
-    vnet_name = strings
+    vnet_name = string
     address_space = string
   }))
   description = "Map of virtual network details."
@@ -35,15 +35,6 @@ variable "subnets" {
   }
 }
 
-variable "nsg_count" {
-  type        = string
-  default     = "2"
-  description = "Number of NSGs to deploy."
-  validation {
-    condition     = can(regex("^\\d+$", var.nsg_count))
-    error_message = "NSG count must be a valid number."
-  }
-}
 
 variable "rules_file" {
   type        = string
@@ -91,16 +82,4 @@ variable "log_analytics_workspace_name" {
   description = "Name of the Log Analytics workspace."
 }
 
-variable "vm1" {
-  type = string
-  
-}
 
-variable "vnet_peerings" {
-  type        = map(object({
-    allow_forwarded_traffic      = bool
-    allow_gateway_transit        = bool
-    allow_virtual_network_access = bool
-  }))
-  description = "Map of VNet peering settings."
-}

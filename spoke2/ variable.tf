@@ -29,16 +29,6 @@ variable "subnets" {
   }
 }
 
-variable "nsg_count" {
-  type        = string
-  default     = "2"
-  description = "Number of NSGs to deploy."
-  validation {
-    condition     = can(regex("^\\d+$", var.nsg_count))
-    error_message = "NSG count must be a valid number."
-  }
-}
-
 variable "rules_file" {
   type        = string
   default     = "rules-20.csv"

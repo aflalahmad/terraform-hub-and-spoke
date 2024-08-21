@@ -150,7 +150,6 @@ data "azurerm_virtual_network" "Hub_VNet" {
 #spoke1 to hub peerings
 
 resource "azurerm_virtual_network_peering" "spoke1_to_hub" {
-  for_each = var.vnet_peerings
 
   name                         = "spoke1-to-hub-peering"
   virtual_network_name         = azurerm_virtual_network.vnets.name
@@ -168,7 +167,6 @@ resource "azurerm_virtual_network_peering" "spoke1_to_hub" {
 }
 
 resource "azurerm_virtual_network_peering" "hub_to_spoke1" {
-  for_each = var.vnet_peerings
 
   name                      = "hub-to-spoke1-peering"
   virtual_network_name      = data.azurerm_virtual_network.Hub_VNet.name

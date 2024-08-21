@@ -63,7 +63,23 @@ resource "azurerm_public_ip" "public_ip" {
 }
 
 
+#Managed user identity
+resource "azurerm_user_assigned_identity" "uami" {
+  name                = "appgw-uami"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+}
 
+#key  vault access policy
+resource "azurerm_key_vault_access_policy" "appgw_policy" {
+  key_vault_id = data.azurerm_key_vault.kv.id
+  tenant_id    = "3060b492-90b8-4040-80ae-612072ce9037"
+  object_id    = azurerm_user_assigned_identity.uami.principal_id
+
+  certificate_permissions = ["Get", "List"]
+  secret_permissions      = ["Get", "List"]
+  key_permissions         = ["Get", "List"]
+}
 
 # Create the Application for their dedicated subnet
 resource "azurerm_application_gateway" "appGW" {
@@ -74,6 +90,11 @@ resource "azurerm_application_gateway" "appGW" {
     name     = "Standard_v2"
     tier     = "Standard_v2"
     capacity = 2
+  }
+
+ identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.uami.id]
   }
 
   gateway_ip_configuration {
@@ -109,15 +130,15 @@ resource "azurerm_application_gateway" "appGW" {
     frontend_ip_configuration_name = "appgw-frontend-ip"
     frontend_port_name             = "frontend-port"
     protocol                       = "Https"
-    # ssl_certificate_name = "generated-cert"
+    ssl_certificate_name = "generated-cert"
   }
 
-  # ssl_certificate {
-  #   name = "generated-cert"
-  #   # data = data.azurerm_key_vault_certificate.example.certificate_data
-  #   # password = data.azurerm_key_vault_certificate.example.secret_id
-  #    key_vault_secret_id = data.azurerm_key_vault_certificate.example.secret_id
-  # }
+  ssl_certificate {
+    name = "generated-cert"
+    # data = data.azurerm_key_vault_certificate.example.certificate_data
+    # password = data.azurerm_key_vault_certificate.example.secret_id
+     key_vault_secret_id = data.azurerm_key_vault_certificate.example.secret_id
+  }
 
   request_routing_rule {
     name                       = "appgw-routing-rule"
