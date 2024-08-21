@@ -16,7 +16,7 @@ subnet_details = {
 }
 public_ip_name = "onprem_vnetgatway_publicip"
 onprem_local_network_gateway_name = "onprem-to-hub"
-keyvault_name = "Aflalkeyvault7788"
+keyvault_name = "Aflalkeyvault7700"
 admin_username = "azureuser"
 admin_password  = "P@ssword123456"
 

@@ -32,7 +32,7 @@ resource "azurerm_subnet" "subnets" {
     depends_on = [ azurerm_virtual_network.onprem_vnets]
   
 }
-
+/*
 #public ip
 resource "azurerm_public_ip" "onprem_vnetgateway_pip" {
    name = var.public_ip_name
@@ -99,13 +99,8 @@ resource "azurerm_virtual_network_gateway_connection" "onprem_vpn_connection" {
 
      depends_on = [ azurerm_virtual_network_gateway.onprem_vnetgateway,azurerm_local_network_gateway.onprem_local_network_gateway ]
 }
-# Managed Identity
-resource "azurerm_user_assigned_identity" "base" {
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  name                = "mi-appgw-keyvault"
-}
 
+*/
 # Key Vault
 resource "azurerm_key_vault" "kv" {
   name                = var.keyvault_name
@@ -120,8 +115,8 @@ resource "azurerm_key_vault" "kv" {
   }
 
   access_policy {
-    tenant_id = data.azurerm_client_config.current.tenant_id
-    object_id = azurerm_user_assigned_identity.base.principal_id
+    tenant_id = "3060b492-90b8-4040-80ae-612072ce9037"
+    object_id = data.azuread_client_config.current.object_id
     
     secret_permissions = [
       "Get",

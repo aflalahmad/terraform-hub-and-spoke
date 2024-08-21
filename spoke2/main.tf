@@ -62,6 +62,9 @@ resource "azurerm_public_ip" "public_ip" {
   sku                 = "Standard"
 }
 
+
+
+
 # Create the Application for their dedicated subnet
 resource "azurerm_application_gateway" "appGW" {
   name                = "App-Gateway"
@@ -85,7 +88,7 @@ resource "azurerm_application_gateway" "appGW" {
 
   frontend_port {
     name = "frontend-port"
-    port = 80
+    port = 443
   }
 
   backend_address_pool {
@@ -105,19 +108,16 @@ resource "azurerm_application_gateway" "appGW" {
     name                           = "appgw-http-listener"
     frontend_ip_configuration_name = "appgw-frontend-ip"
     frontend_port_name             = "frontend-port"
-    protocol                       = "Http"
-    ssl_certificate_name = "app-listener"
+    protocol                       = "Https"
+    # ssl_certificate_name = "generated-cert"
   }
 
-  identity {
-    type = "UserAssigned"
-    identity_ids = [ data.azurerm_user_assigned_identity.base.id ]
-  }
-
-  ssl_certificate {
-    name = "app-listener"
-    key_vault_secret_id = data.azurerm_key_vault_certificate.example.secret_id
-  }
+  # ssl_certificate {
+  #   name = "generated-cert"
+  #   # data = data.azurerm_key_vault_certificate.example.certificate_data
+  #   # password = data.azurerm_key_vault_certificate.example.secret_id
+  #    key_vault_secret_id = data.azurerm_key_vault_certificate.example.secret_id
+  # }
 
   request_routing_rule {
     name                       = "appgw-routing-rule"
@@ -131,7 +131,7 @@ resource "azurerm_application_gateway" "appGW" {
 
 #key vault for secret username and password
 data "azurerm_key_vault" "kv" {
-    name = "Aflalkeyvault7788"
+    name = "Aflalkeyvault7700"
     resource_group_name = "onprem_RG"
 }
 data "azurerm_key_vault_secret" "vm_admin_username" {
@@ -143,11 +143,6 @@ data "azurerm_key_vault_secret" "vm_admin_password" {
      key_vault_id = data.azurerm_key_vault.kv.id
 }
 
-#user identity using data block
-data "azurerm_user_assigned_identity" "base" {
-  name = "mi-appgw-keyvault"
-  resource_group_name = "onprem_RG"
-}
 
 # key vault certificate using data block
 data "azurerm_key_vault_certificate" "example" {
@@ -184,7 +179,7 @@ resource "azurerm_windows_virtual_machine_scale_set" "vmss" {
     version   = "latest"
   }
 }
-
+/*
 #using data block for Hub vnet
 data "azurerm_virtual_network" "Hub_VNet" {
   name = "HubVNet"
