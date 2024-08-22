@@ -15,7 +15,7 @@ output "subnet_ids" {
     subnet_name => subnet.id
   }
 }
-/*
+
 output "public_ip_id" {
   description = "The ID of the public IP address associated with the on-premises virtual network gateway."
   value = azurerm_public_ip.onprem_vnetgateway_pip.id
@@ -38,4 +38,3 @@ output "vpn_connection_ids" {
     subnet_name => connection.id
   }
 }
-*/

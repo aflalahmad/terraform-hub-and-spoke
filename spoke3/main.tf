@@ -117,7 +117,7 @@ resource "azurerm_virtual_network_peering" "hub_to_spoke3" {
 
 
 
-/*
+
 #Recovery service vault for backup
 
 resource "azurerm_recovery_services_vault" "rsv" {
@@ -162,12 +162,3 @@ resource "azurerm_backup_policy_vm" "backup_policy" {
   }
 }
 
-resource "azurerm_backup_protected_vm" "backup_protected" {
-    for_each = azurerm_virtual_machine.vm
-    resource_group_name = azurerm_resource_group.rg.name
-    recovery_vault_name = azurerm_recovery_services_vault.rsv.name
-    source_vm_id = each.value.id
-    backup_policy_id = azurerm_backup_policy_vm.backup_policy.id
-}
-
-*/

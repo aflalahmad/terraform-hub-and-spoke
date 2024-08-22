@@ -247,7 +247,7 @@ resource "azurerm_virtual_network_peering" "hub_to_spoke2" {
     ]
 }
 
-/*
+
 #Daily backup for VM
 # Recovery Services Vault
 resource "azurerm_recovery_services_vault" "rsv" {
@@ -290,74 +290,3 @@ resource "azurerm_backup_policy_vm" "backup_policy" {
   }
 }
 
-
-# Backup Protection for VM Scale Set
-/*
-resource "azurerm_backup_protected_vm" "backup_protected" {
-  count               = var.instance
-  resource_group_name = azurerm_resource_group.rg.name
-  recovery_vault_name = azurerm_recovery_services_vault.rsv.name
-  source_vm_id        = azurerm_windows_virtual_machine_scale_set.vmss.virtual_machine_id[count.index]
-  backup_policy_id    = azurerm_backup_policy_vm.backup_policy.id
-  depends_on = [ azurerm_windows_virtual_machine_scale_set.vmss,azurerm_backup_policy_vm.backup_policy ]
-}
-
-
-#Service deployments should be limited to specific Azure regions via Azure Policy. 
-resource "azurerm_policy_definition" "limit_deployment_regions" {
-  name         = "limiteddeployment-regions"
-  display_name = "Limit Azure Resource Deployments to Specific Regions"
-  description  = "Ensures that resources are deployed only in specific Azure regions."
-  mode = "Indexed"
-  policy_type = "Custom"
-
-  policy_rule = jsonencode({
-    "if": {
-      "not": {
-        "field": "location",
-        "in": [
-          "East US",
-          "West Europe",
-          "Southeast Asia",
-          "West US"
-        ]
-      }
-    },
-    "then": {
-      "effect": "deny"
-    }
-  })
-}
-#All Azure Policies should be scoped to the Resource Group level. 
-resource "azurerm_resource_group_policy_assignment" "example" {
-  name                 = "example"
-  resource_group_id    = azurerm_resource_group.rg.id
-  policy_definition_id = azurerm_policy_definition.limit_deployment_regions.id
-
-}
-
-*/
-#route table for communicate between spoke2 t0 spoke1 through firewall
-/*
-resource "azurerm_route_table" "spoke2-udr" {
-
-  name = "spoke2-udr-to-firewall"
-  location = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-
-  route {
-    name = "route-to-firewall"
-    address_prefix = "10.30.1.0/24"
-    next_hop_type = "VirtualAppliance"
-    next_hop_in_ip_address = "10.10.3.4"
-  }
-  
-}
-
-resource "azurerm_subnet_route_table_association" "spoke1udr_subnet_association" {
-    for_each = var.subnets
-
-    subnet_id = azurerm_subnet.subnets[each.key].id
-    route_table_id = azurerm_route_table.spoke2-udr.id
-}
-*/

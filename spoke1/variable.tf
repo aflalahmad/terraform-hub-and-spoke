@@ -77,9 +77,3 @@ variable "backuppolicy_name" {
   description = "Name of the backup policy."
 }
 
-variable "log_analytics_workspace_name" {
-  type        = string
-  description = "Name of the Log Analytics workspace."
-}
-
-
