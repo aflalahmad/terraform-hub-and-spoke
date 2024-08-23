@@ -124,21 +124,21 @@ resource "azurerm_firewall_policy_rule_collection_group" "icmp_rule" {
   firewall_policy_id = azurerm_firewall_policy.policy.id
   priority = 100
 
-  nat_rule_collection {          
-    name     = "DNat-rule-collection"
-    priority = 100
-    action   = "Dnat"
+  # nat_rule_collection {          
+  #   name     = "DNat-rule-collection"
+  #   priority = 100
+  #   action   = "Dnat"
 
-    rule {
-      name             = "Allow-RDP"
-      source_addresses = ["103.25.44.14"]   
-      destination_ports = ["3389"]
-      destination_address = azurerm_public_ip.publi_ips["firewall-pip"].ip_address
-      translated_address = "10.100.2.4"   
-      translated_port    = "3389"
-      protocols         = ["TCP"]
-    }
-  }
+  #   rule {
+  #     name             = "Allow-RDP"
+  #     source_addresses = ["103.25.44.14"]   
+  #     destination_ports = ["3389"]
+  #     destination_address = azurerm_public_ip.publi_ips["firewall-pip"].ip_address
+  #     translated_address = "10.100.2.4"   
+  #     translated_port    = "3389"
+  #     protocols         = ["TCP"]
+  #   }
+  # }
  
  network_rule_collection {
     name     = "AllowICMP_Rules"
